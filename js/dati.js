@@ -39,29 +39,41 @@ export const FUNICOLARE = { cap: 25, capCresce: 1.2, su: 60, cresce: 1.18, gesto
 /** Ape: capienza per livello; il numero di Ape cresce ai livelli `nuoveApe` (massimo 5). */
 export const APE = { cap: 30, capCresce: 1.2, su: 50, cresce: 1.18, gestore: 120, viaggio: 3, carico: 0.6, nuoveApe: [10, 50, 100, 200] };
 
-/** Gradi dei gestori: probabilità di uscire, durata dell'abilità e ricarica (secondi). */
+/**
+ * Gestori. Ogni zona (botteghe, funicolare, Ape) ha la sua squadra: si assumono a caso, il prezzo sale a ogni
+ * assunzione, si assegnano ai posti e si possono scambiare o vendere (metà del prezzo). Il gestore assegnato fa
+ * lavorare il posto da solo, sempre. L'abilità speciale invece si attiva a mano: dura un po' e poi si ricarica,
+ * e la ricarica è del gestore, non del posto (conviene mettere al posto un gestore con l'abilità pronta).
+ */
 export const GRADI = [
-  { nome: 'Apprendista', prob: 0.65, durata: 60, ricarica: 300, colore: '#8fd3a5' },
-  { nome: 'Esperto', prob: 0.27, durata: 180, ricarica: 900, colore: '#7fb5ff' },
-  { nome: 'Maestro', prob: 0.08, durata: 600, ricarica: 3000, colore: '#ffc24b' },
+  { nome: 'Junior', prob: 0.65, durata: 60, ricarica: 300, colore: '#8fd3a5' },
+  { nome: 'Senior', prob: 0.27, durata: 180, ricarica: 900, colore: '#7fb5ff' },
+  { nome: 'Executive', prob: 0.08, durata: 600, ricarica: 3000, colore: '#ffc24b' },
 ];
-/** Abilità dei gestori per tipo di posto, con l'effetto per ogni grado. */
+const SCONTO = { id: 'sconto', nome: 'Sconto', em: '💸', effetto: [0.4, 0.7, 0.8], testo: x => `potenziamenti scontati del ${Math.round(x * 100)}%` };
+/** Abilità per zona, con l'effetto per grado (Junior, Senior, Executive). */
 export const ABILITA = {
   b: [
-    { id: 'veloce', nome: 'Turbo', em: '⚡', effetto: [3, 5, 7], testo: x => `commessi ×${x} più veloci` },
-    { id: 'sconto', nome: 'Sconto', em: '💸', effetto: [0.4, 0.7, 0.8], testo: x => `potenziamenti −${Math.round(x * 100)}%` },
+    { id: 'lavoro', nome: 'Mani d\'oro', em: '⚒️', effetto: [3, 5, 7], testo: x => `i commessi lavorano ×${x} più veloci` },
+    { id: 'passo', nome: 'Passo svelto', em: '👟', effetto: [3.5, 5.5, 7.5], testo: x => `i commessi camminano ×${x} più veloci` },
+    SCONTO,
   ],
   f: [
-    { id: 'veloce', nome: 'Turbo', em: '⚡', effetto: [2, 4, 6], testo: x => `funicolare ×${x} più veloce` },
-    { id: 'carico', nome: 'Carico', em: '📦', effetto: [3, 5, 7], testo: x => `porta ×${x} merce` },
-    { id: 'sconto', nome: 'Sconto', em: '💸', effetto: [0.4, 0.7, 0.8], testo: x => `potenziamenti −${Math.round(x * 100)}%` },
+    { id: 'veloce', nome: 'Corsa veloce', em: '⚡', effetto: [2, 4, 6], testo: x => `la cabina va ×${x} più veloce` },
+    { id: 'caricamento', nome: 'Carico rapido', em: '⏩', effetto: [2, 4, 6], testo: x => `carica ×${x} più in fretta` },
+    { id: 'capienza', nome: 'Cabina capiente', em: '📦', effetto: [3, 5, 7], testo: x => `porta ×${x} merce` },
+    SCONTO,
   ],
   a: [
-    { id: 'veloce', nome: 'Turbo', em: '⚡', effetto: [3, 5, 7], testo: x => `Ape ×${x} più veloci` },
-    { id: 'carico', nome: 'Carico', em: '📦', effetto: [3, 5, 8], testo: x => `portano ×${x} merce` },
-    { id: 'sconto', nome: 'Sconto', em: '💸', effetto: [0.4, 0.7, 0.8], testo: x => `potenziamenti −${Math.round(x * 100)}%` },
+    { id: 'veloce', nome: 'Piede sull\'acceleratore', em: '⚡', effetto: [3, 5, 7], testo: x => `le Ape vanno ×${x} più veloci` },
+    { id: 'caricamento', nome: 'Carico rapido', em: '⏩', effetto: [3, 5, 8], testo: x => `caricano ×${x} più in fretta` },
+    { id: 'capienza', nome: 'Cassone grande', em: '📦', effetto: [3, 5, 8], testo: x => `portano ×${x} merce` },
+    SCONTO,
   ],
 };
+/** Prezzo della prima assunzione per zona e di quanto si moltiplica a ogni gestore in più nella squadra. */
+export const PREZZO_GESTORI = { b: { base: 100, cresce: 4 }, f: { base: 150, cresce: 6 }, a: { base: 120, cresce: 6 } };
+export const NOMI_GESTORI = ['Peppe', 'Carmela', 'Totò', 'Nunzia', 'Gennaro', 'Assunta', 'Ciro', 'Filomena', 'Salvatore', 'Rosaria', 'Tonino', 'Concetta', 'Enzo', 'Lucia', 'Pasquale', 'Titina', 'Vincenzo', 'Teresa', 'Gigi', 'Annarella', 'Mimmo', 'Pina', 'Rocco', 'Graziella'];
 /** Ad app chiusa i gestori incassano questa frazione del ritmo normale. */
 export const QUOTA_ASSENZA = 0.5;
 

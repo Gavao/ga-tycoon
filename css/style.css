@@ -195,3 +195,67 @@ dialog .grande { margin: 6px 0; }
 .primary small { font-weight: 700; }
 .aggiornaApk { display: block; width: calc(100% - 24px); max-width: 616px; margin: 8px auto; padding: 10px; border-radius: 12px; background: #8fd3a5; color: #123d22; font-weight: 900; }
 .aggiornaApk[hidden] { display: none; }
+
+/* ---------------------------------------------------------------- edifici da toccare per migliorare */
+button.bottega, button.dep, button.merc, button.cassetta { padding: 0; text-align: left; font: inherit; color: inherit; }
+button.bottega { display: block; background: #fffaf0; }
+.bottega .tenda { display: block; }
+.bottega .insegna { right: 74px; }
+.targa { position: absolute; padding: 3px 7px; border-radius: 8px; background: #3a2400; color: #ffe3a3; font-size: 11.5px; font-weight: 900; white-space: nowrap; box-shadow: 0 2px 0 #0004; pointer-events: none; }
+.targa.puoi { background: #2fae5e; color: #fff; animation: pronto 1.2s ease-in-out infinite; }
+.bottega .targa { top: 22px; right: 6px; }
+.dep .targa, .merc .targa { left: 50%; bottom: -8px; transform: translateX(-50%); }
+.dep .targa.puoi, .merc .targa.puoi { animation: none; }
+button.dep, button.merc { background: none; }
+button.cassetta { display: block; }
+.gslot { position: absolute; left: 60px; top: 8px; z-index: 5; display: flex; gap: 4px; align-items: center; }
+.gslot .assumi { padding: 4px 7px; font-size: 11px; }
+.gslot .gestore { width: 28px; height: 28px; font-size: 15px; }
+.gslot .abil { padding: 4px 6px; font-size: 11px; }
+
+/* sotto la bottega: livello e traguardo */
+.pedana { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto 7px; gap: 2px 8px; align-items: center; left: 10px; right: 10px; bottom: 5px; }
+.livTxt { font-size: 13px; font-weight: 900; color: #3a2400; white-space: nowrap; }
+.prox { font-size: 11px; font-weight: 700; color: #5c4630; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.avanz { grid-column: 1 / -1; display: block; height: 7px; border-radius: 4px; background: #0002; overflow: hidden; }
+.avanz i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #2fae5e, #8fd3a5); border-radius: 4px; transition: width .3s; }
+
+/* pannelli di funicolare e Ape: una riga ciascuno */
+.comandi { grid-template-columns: 1fr; gap: 5px; }
+.cmd { display: flex; align-items: center; gap: 6px; padding: 5px 8px; }
+.cmdInfo { flex: 1; min-width: 0; cursor: pointer; display: grid; grid-template-columns: auto 1fr; gap: 1px 8px; align-items: center; }
+.cmdInfo b { font-size: 12.5px; white-space: nowrap; }
+.cmdInfo > small:first-of-type { text-align: right; }
+.cmdInfo .avanz { height: 5px; background: #fff2; }
+.cmdInfo .prox { grid-column: 1 / -1; text-align: left; color: var(--muted); font-size: 10.5px; }
+.cmdGest { display: flex; gap: 4px; align-items: center; flex: none; }
+
+/* tocchi: tutto ciò che si preme risponde */
+button:not(:disabled):active, .cmdInfo:active { transform: scale(.96); }
+button.bottega:active { transform: scale(.98); }
+.volo.piccolo { font-size: 13px; color: #fff; text-shadow: 0 1px 3px #000, 0 0 2px #000; }
+.apri:not(:disabled):active { transform: translateX(-50%) scale(.97); }
+.bottega .tenda { position: absolute; top: 0; left: 0; right: 0; }
+.dep .targa, .merc .targa { top: -8px; bottom: auto; z-index: 6; }
+.pedana { bottom: 6px; }
+.prox { font-size: 11.5px; }
+
+/* ---------------------------------------------------------------- squadra dei gestori */
+h2 small { text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--muted); }
+.squadra { display: grid; gap: 8px; }
+.card.squadra .primary { margin-top: 4px; }
+.gRiga { display: grid; grid-template-columns: 38px 1fr; gap: 4px 10px; align-items: start; padding: 9px; border-radius: 14px; background: var(--panel-2); border: 1px solid var(--line); text-align: left; }
+.gRiga.qui { border-color: var(--oro); box-shadow: 0 0 0 2px #ffc24b44; }
+.gAv { width: 38px; height: 38px; border-radius: 50%; background: #fff; border: 3px solid var(--r); display: grid; place-items: center; font-size: 20px; }
+.gT b { font-size: 15px; }
+.gT small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.gAz { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.mini { padding: 7px 10px; border-radius: 10px; background: var(--oro); color: var(--oro-ink); font-weight: 900; font-size: 12.5px; }
+.mini.verde { background: #8fd3a5; color: #123d22; }
+.mini.rosso { background: transparent; color: var(--rosso); border: 1px solid #ff7a6b66; }
+.gAz select { padding: 7px 8px; border-radius: 10px; background: var(--bg); color: var(--text); border: 1px solid var(--line); font: inherit; font-size: 13px; max-width: 100%; }
+.st.attiva { color: var(--oro); } .st.ricarica { color: var(--muted); } .st.pronta { color: var(--verde); }
+.dove { color: var(--verde); font-weight: 800; align-self: center; }
+.legenda { display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); }
+.scheda .squadra { max-height: 52vh; overflow: auto; margin: 4px 0; }
+.assumi { font-size: 13px; }

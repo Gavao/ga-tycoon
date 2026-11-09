@@ -3,7 +3,7 @@
 import { APP_VERSION } from './version.js';
 import {
   BOTTEGHE, CRESCE_BOTTEGA, TAPPE, COMMESSI, LIVELLO_GESTORI, GIRO, LAVORI, FUNICOLARE as F, APE as A,
-  GRADI, ABILITA, QUOTA_ASSENZA, POTENZIAMENTI, RINNOVI,
+  GRADI, ABILITA, PREZZO_GESTORI, NOMI_GESTORI, QUOTA_ASSENZA, POTENZIAMENTI, RINNOVI,
 } from './dati.js';
 import { omino, cabina, ape, deposito, mercato, limone } from './disegni.js';
 
@@ -39,6 +39,7 @@ const ora = () => Date.now();
 const bottegaVuota = () => ({ L: 0, g: null, cassa: 0, w: [{ fase: 'fermo', t: 0 }] });
 const nuovo = (rinnovo = 0, carriera = 0) => ({
   v: 3, soldi: 0, partita: 0, carriera, rinnovo, modo: 0, upg: [], ultimo: ora(), deposito: 0, lavori: {},
+  staff: { b: [], f: [], a: [] },   // squadre di gestori; nei posti (g) c'è l'id del gestore assegnato
   liv: BOTTEGHE.map((_, i) => ({ ...bottegaVuota(), L: i ? 0 : 1 })),
   funi: { L: 1, g: null, fase: 'fermo', pos: 0, carico: 0, t: 0 },
   ape: { L: 1, g: null, fase: 'fermo', x: 0, carico: 0, t: 0 },
@@ -48,6 +49,16 @@ function carica() {
     const s = JSON.parse(localStorage.getItem(KEY) ?? 'null');
     if (s?.v === 3 && Array.isArray(s.liv)) {
       while (s.liv.length < BOTTEGHE.length) s.liv.push(bottegaVuota());
+      if (!s.staff) {   // salvataggi di prima: il gestore stava dentro il posto, ora sta nella squadra
+        s.staff = { b: [], f: [], a: [] };
+        const sposta = (chi, p) => {
+          if (!p.g || typeof p.g !== 'object') return;
+          const m = { ...p.g, id: Math.random().toString(36).slice(2, 9), nome: NOMI_GESTORI[s.staff[chi].length % NOMI_GESTORI.length] };
+          m.a = Math.min(m.a, ABILITA[chi].length - 1);
+          s.staff[chi].push(m); p.g = m.id;
+        };
+        s.liv.forEach(l => sposta('b', l)); sposta('f', s.funi); sposta('a', s.ape);
+      }
       return s;
     }
   } catch { /* salvataggio rovinato */ }
@@ -64,13 +75,18 @@ const tappe = L => TAPPE.filter(t => L >= t).length;
 const nCommessi = L => 1 + COMMESSI.filter(t => L >= t).length;
 const nApe = () => 1 + A.nuoveApe.filter(t => S.ape.L >= t).length;
 const posto = (chi, i) => (chi === 'b' ? S.liv[i] : chi === 'f' ? S.funi : S.ape);
+/** Gestore assegnato a un posto (oggetto della squadra) oppure null. */
+const gest = (chi, i) => { const id = posto(chi, i).g; return id ? S.staff[chi].find(m => m.id === id) ?? null : null; };
+/** Dove lavora un gestore: indice del posto (0 per funicolare e Ape) oppure -1 se è libero. */
+const doveLavora = (chi, m) => (chi === 'b' ? S.liv.findIndex(l => l.g === m.id) : posto(chi, 0).g === m.id ? 0 : -1);
 /** Effetto dell'abilità del gestore se è attiva in questo momento (altrimenti null). */
 const abilita = (chi, i, id) => {
-  const g = posto(chi, i).g;
-  if (!g || ora() >= g.fino) return null;
-  const ab = ABILITA[chi][g.a];
-  return ab.id === id ? ab.effetto[g.r] : null;
+  const m = gest(chi, i);
+  if (!m || ora() >= m.fino) return null;
+  const ab = ABILITA[chi][m.a];
+  return ab.id === id ? ab.effetto[m.r] : null;
 };
+const prezzoAssunzione = chi => PREZZO_GESTORI[chi].base * PREZZO_GESTORI[chi].cresce ** S.staff[chi].length;
 // Valori a un dato livello L (servono anche alle schede per mostrare "adesso → dopo")
 const prodL = (i, L) => BOTTEGHE[i].base * L * 2 ** tappe(L) * molt('prod') * moltRinnovo();
 const velFuniL = L => Math.min(F.velocitaMax, 1 + (L - 1) * F.velocitaPerLivello) * molt('funi');
@@ -79,23 +95,28 @@ const nApeL = L => 1 + A.nuoveApe.filter(t => L >= t).length;
 const capUnaApeL = L => A.cap * A.capCresce ** (L - 1);
 const prod = i => prodL(i, S.liv[i].L);
 const giro = GIRO.lavora + GIRO.porta + GIRO.rientra;
-const velCommessi = i => abilita('b', i, 'veloce') ?? 1;
+// Velocità con le abilità attive: lavoro e passo dei commessi; corsa, carico e capienza di funicolare e Ape
+const vLavoro = i => abilita('b', i, 'lavoro') ?? 1;
+const vPasso = i => abilita('b', i, 'passo') ?? 1;
+const cicloBottega = i => GIRO.lavora / vLavoro(i) + (GIRO.porta + GIRO.rientra) / vPasso(i);
 const velFuni = () => velFuniL(S.funi.L) * (abilita('f', 0, 'veloce') ?? 1);
-const capFuni = () => capFuniL(S.funi.L) * (abilita('f', 0, 'carico') ?? 1);
+const caricoFuni = () => F.carico / (velFuniL(S.funi.L) * (abilita('f', 0, 'caricamento') ?? 1));
+const capFuni = () => capFuniL(S.funi.L) * (abilita('f', 0, 'capienza') ?? 1);
 const velApe = () => molt('ape') * (abilita('a', 0, 'veloce') ?? 1);
-const capApe = () => capUnaApeL(S.ape.L) * nApe() * (abilita('a', 0, 'carico') ?? 1);
-const viaggioFuni = () => (2 * aperte() * F.perTerrazza + aperte() * F.carico) / velFuni();
-const viaggioApe = () => (2 * A.viaggio + A.carico) / velApe();
+const caricoApe = () => A.carico / (molt('ape') * (abilita('a', 0, 'caricamento') ?? 1));
+const capApe = () => capUnaApeL(S.ape.L) * nApe() * (abilita('a', 0, 'capienza') ?? 1);
+const viaggioFuni = () => (2 * aperte() * F.perTerrazza) / velFuni() + aperte() * caricoFuni();
+const viaggioApe = () => (2 * A.viaggio) / velApe() + caricoApe();
 /** Euro al secondo che ogni anello della catena riesce a gestire. */
 const ritmi = () => ({
-  botteghe: S.liv.reduce((s, l, i) => s + (l.L ? (prod(i) / giro) * velCommessi(i) : 0), 0),
+  botteghe: S.liv.reduce((s, l, i) => s + (l.L ? prod(i) / cicloBottega(i) : 0), 0),
   funi: capFuni() / viaggioFuni(),
   ape: capApe() / viaggioApe(),
 });
 /** Guadagno al secondo con i gestori (lavora da solo solo chi ha il gestore). */
 const alSecondo = () => {
   if (!S.funi.g || !S.ape.g) return 0;
-  const auto = S.liv.reduce((s, l, i) => s + (l.L && l.g ? (prod(i) / giro) * velCommessi(i) : 0), 0);
+  const auto = S.liv.reduce((s, l, i) => s + (l.L && l.g ? prod(i) / cicloBottega(i) : 0), 0);
   const r = ritmi();
   return Math.min(auto, r.funi, r.ape);
 };
@@ -116,7 +137,6 @@ function quanti(chi, i) {
   const [base, g, L] = parametri(chi, i), sc = 1 - (abilita(chi, i, 'sconto') ?? 0);
   return Math.max(1, Math.floor(Math.log((S.soldi * (g - 1)) / (base * g ** (L - 1) * sc) + 1) / Math.log(g)));
 }
-const prezzoGestore = (chi, i) => (chi === 'b' ? BOTTEGHE[i].gestore : chi === 'f' ? F.gestore : A.gestore);
 const incassa = x => { S.soldi += x; S.partita += x; S.carriera += x; };
 
 /** Lavori sulla scalinata prima della prossima bottega: { fine, resta } oppure null. */
@@ -129,19 +149,20 @@ function lavori() {
 }
 
 // ---------------------------------------------------------------- il tempo che passa
+const depositi = {}, ultimoVolo = {};   // merce appena messa in cassetta, per far volare il "+€" (non si salva)
 function avanza(dt) {
   // Commessi: lavorano al bancone, portano la merce in cassetta, rientrano
   S.liv.forEach((l, i) => {
     if (!l.L) return;
     const n = nCommessi(l.L);
-    while (l.w.length < n) l.w.push({ fase: l.g ? 'fermo' : 'fermo', t: -0.5 * l.w.length });
-    const v = velCommessi(i), quota = prod(i) / n;
+    while (l.w.length < n) l.w.push({ fase: 'fermo', t: -0.5 * l.w.length });
+    const vl = vLavoro(i), vp = vPasso(i), quota = prod(i) / n;
     for (const w of l.w) {
       if (w.fase === 'fermo') { if (l.g) { w.fase = 'lavora'; } else continue; }
-      w.t += dt * v;
+      w.t += dt * (w.fase === 'lavora' ? vl : vp);
       if (w.t < 0) continue;
       if (w.fase === 'lavora' && w.t >= GIRO.lavora) { w.fase = 'porta'; w.t = 0; }
-      else if (w.fase === 'porta' && w.t >= GIRO.porta) { w.fase = 'rientra'; w.t = 0; l.cassa += quota; }
+      else if (w.fase === 'porta' && w.t >= GIRO.porta) { w.fase = 'rientra'; w.t = 0; l.cassa += quota; depositi[i] = (depositi[i] ?? 0) + quota; }
       else if (w.fase === 'rientra' && w.t >= GIRO.rientra) { w.fase = 'fermo'; w.t = 0; }
     }
   });
@@ -154,7 +175,7 @@ function avanza(dt) {
     if (f.pos >= meta) { f.fase = 'carica'; f.t = 0; }
   } else if (f.fase === 'carica') {
     f.t += dt;
-    if (f.t >= F.carico / velFuni()) {
+    if (f.t >= caricoFuni()) {
       const l = S.liv[f.pos - 1], presa = Math.min(capFuni() - f.carico, l?.cassa ?? 0);
       if (l) { l.cassa -= presa; f.carico += presa; }
       f.fase = f.carico >= capFuni() - 1e-9 || f.pos >= n ? 'sale' : 'scende';
@@ -168,7 +189,7 @@ function avanza(dt) {
   if (a.fase === 'fermo' && a.g && S.deposito > 0) { a.fase = 'carica'; a.t = 0; }
   if (a.fase === 'carica') {
     a.t += dt;
-    if (a.t >= A.carico / velApe()) { a.carico = Math.min(capApe(), S.deposito); S.deposito -= a.carico; a.fase = 'va'; }
+    if (a.t >= caricoApe()) { a.carico = Math.min(capApe(), S.deposito); S.deposito -= a.carico; a.fase = 'va'; }
   } else if (a.fase === 'va') {
     a.x = Math.min(1, a.x + dt / corsa);
     if (a.x >= 1) { incassa(a.carico); if (a.carico > 0) vola(a.carico); a.carico = 0; a.fase = 'torna'; }
@@ -183,7 +204,7 @@ function guadagniAssenza() {
   const sec = Math.min(7 * 86400, (ora() - (S.ultimo ?? ora())) / 1000);
   if (sec < 30) return;
   const q = QUOTA_ASSENZA;
-  S.liv.forEach((l, i) => { if (l.L && l.g) l.cassa += (prod(i) / giro) * q * sec; });
+  S.liv.forEach((l, i) => { if (l.L && l.g) l.cassa += (prod(i) / giro) * q * sec; });   // ad app chiusa niente abilità
   const r = ritmi();
   if (S.funi.g) {
     const stock = S.liv.reduce((s, l) => s + l.cassa, 0), mosso = Math.min(stock, r.funi * q * sec);
@@ -211,8 +232,8 @@ function renderPaese() {
   view.innerHTML = `<div id="scena" style="height:${alt}px">
     <div class="cielo"><div class="sole"></div><div class="colle c1"></div><div class="colle c2"></div></div>
     <div class="piazza">
-      <div class="dep" data-act="ape">${deposito()}<span class="bolla" id="bDep"></span></div>
-      <div class="merc">${mercato()}</div>
+      <button class="dep" data-su="f:0" aria-label="Migliora la funicolare">${deposito()}<span class="bolla" id="bDep"></span><span class="targa" id="tg-f"></span></button>
+      <button class="merc" data-su="a:0" aria-label="Migliora le Ape">${mercato()}<span class="targa" id="tg-a"></span></button>
       <div class="strada"></div>
       <div class="apeBox" id="ape" data-act="ape">${ape()}<span class="bolla" id="bApe"></span><span class="nApe" id="nApe"></span><span class="mano" id="mApe">👆</span></div>
       <div class="comandi">${comando('f', '🚡', 'Funicolare')}${comando('a', '🛺', 'Ape')}</div>
@@ -234,33 +255,51 @@ function renderPaese() {
 /** Il posto del gestore: lucchetto, pulsante per assumerlo, oppure il gestore con la sua abilità. */
 function slotGestore(chi, i) {
   if (!gestoriAperti()) return `<span class="lucchetto" title="I gestori arrivano quando il chiosco è al livello ${LIVELLO_GESTORI}">🔒</span>`;
-  const g = posto(chi, i).g;
-  if (!g) return `<button class="assumi" data-gest="${chi}:${i}">🧑‍💼 ${fmt(prezzoGestore(chi, i))}</button>`;
-  const ab = ABILITA[chi][g.a];
-  return `<button class="gestore" data-info="${chi}:${i}" style="--r:${GRADI[g.r].colore}">🧑‍💼</button>
+  const m = gest(chi, i);
+  if (!m) return `<button class="assumi" data-squadra="${chi}:${i}">🧑‍💼 +</button>`;
+  const ab = ABILITA[chi][m.a];
+  return `<button class="gestore" data-squadra="${chi}:${i}" style="--r:${GRADI[m.r].colore}" aria-label="${m.nome}, ${GRADI[m.r].nome}">🧑‍💼</button>
     <button class="abil" data-attiva="${chi}:${i}" id="ab-${chi}${i}">${ab.em} <span></span></button>`;
 }
+/** Pannello di funicolare o Ape in piazza: si tocca per aprire la scheda di potenziamento. */
 function comando(chi, em, nome) {
-  return `<div class="cmd"><b>${em} ${nome} <i id="liv-${chi}"></i></b><small id="info-${chi}"></small>
-    <div class="cmdRiga"><button class="su" data-su="${chi}:0"><span>⬆</span><small id="prezzo-${chi}"></small></button>${slotGestore(chi, 0)}</div></div>`;
+  return `<div class="cmd">
+    <div class="cmdInfo" data-su="${chi}:0"><b>${em} ${nome} <i id="liv-${chi}"></i></b><small id="info-${chi}"></small>
+      <span class="avanz"><i id="bar-${chi}"></i></span><small class="prox" id="prox-${chi}"></small></div>
+    <div class="cmdGest">${slotGestore(chi, 0)}</div></div>`;
+}
+/** Prossimo traguardo di un posto: { testo, quota (0-1) } oppure null. */
+function traguardo(chi, i) {
+  if (chi === 'f') return null;
+  const L = posto(chi, i).L;
+  const eventi = chi === 'b'
+    ? [...TAPPE.map(t => [t, '🎉 ×2']), ...COMMESSI.map(t => [t, '👥 +1 commesso'])]
+    : A.nuoveApe.map(t => [t, '🛺 +1 Ape']);
+  const prossimi = eventi.filter(([t]) => t > L).sort((x, y) => x[0] - y[0]);
+  if (!prossimi.length) return null;
+  const [t] = prossimi[0], cosa = prossimi.filter(([x]) => x === t).map(([, c]) => c).join(' e ');
+  const prima = Math.max(0, ...eventi.map(([x]) => x).filter(x => x <= L));
+  return { testo: `${cosa} al liv. ${t} · mancano ${t - L}`, quota: (L - prima) / (t - prima) };
 }
 function terrazza(i) {
   const b = BOTTEGHE[i], l = S.liv[i], n = nCommessi(l.L);
   return `<div class="terrazza" style="top:${PIAZZA + i * RIGA}px" data-i="${i}">
     <div class="muro" style="background:${b.muro}"></div>
     ${i % 3 === 1 ? limone(W - 46, 0.8) : ''}
-    <div class="bottega" data-act="lav:${i}">
-      <div class="tenda" style="--t:${b.tenda}"></div>
-      <div class="insegna">${b.em} ${b.nome}</div>
-      <div class="vetrina"><span>${b.em}</span></div>
-      <div class="porta"></div>
-    </div>
-    <div class="cassetta"><span class="bolla" id="bc${i}"></span></div>
+    <button class="bottega" data-su="b:${i}" aria-label="Migliora ${b.nome}">
+      <span class="tenda" style="--t:${b.tenda}"></span>
+      <span class="insegna">${b.em} ${b.nome}</span>
+      <span class="vetrina"><span>${b.em}</span></span>
+      <span class="porta"></span>
+      <span class="targa" id="tg-b${i}"></span>
+    </button>
+    <div class="gslot">${slotGestore('b', i)}</div>
+    <button class="cassetta" data-act="lav:${i}" aria-label="Fai lavorare"><span class="bolla" id="bc${i}"></span></button>
     ${Array.from({ length: n }, (_, k) => `<div class="commesso" id="w${i}_${k}" data-act="lav:${i}">${omino(b.maglia, b.cappello)}${k === 0 ? `<span class="mano" id="m${i}">👆</span>` : ''}</div>`).join('')}
     <div class="pedana">
-      ${slotGestore('b', i)}
-      <span class="liv" id="liv${i}"></span>
-      <button class="su" data-su="b:${i}"><span>⬆</span><small id="prezzo${i}"></small></button>
+      <span class="livTxt" id="liv${i}"></span>
+      <span class="prox" id="prox${i}"></span>
+      <span class="avanz"><i id="bar${i}"></i></span>
     </div>
   </div>`;
 }
@@ -297,7 +336,6 @@ function renderRinnovo() {
 }
 function render() {
   for (const b of document.querySelectorAll('#nav button')) b.classList.toggle('on', b.dataset.tab === tab);
-  $('#modo').hidden = tab !== 'paese';
   if (tab === 'paese') renderPaese(); else if (tab === 'gestori') renderGestori(); else if (tab === 'potenzia') renderPotenzia(); else renderRinnovo();
   aggiorna(true);
 }
@@ -305,19 +343,20 @@ function render() {
 // ---------------------------------------------------------------- aggiornamento a ogni fotogramma
 const txt = (el, t) => { if (el && el.textContent !== t) el.textContent = t; };
 const sposta = (el, x, y, flip = false) => { if (el) el.style.transform = `translate(${x}px, ${y}px)${flip ? ' scaleX(-1)' : ''}`; };
+/** Stato dell'abilità di un gestore: 'attiva' | 'ricarica' | 'pronta', con i secondi che mancano. */
+const statoDi = m => { const t = ora(); return t < m.fino ? ['attiva', (m.fino - t) / 1000] : t < m.pronto ? ['ricarica', (m.pronto - t) / 1000] : ['pronta', 0]; };
 function statoAbilita(chi, i, el) {
-  const g = posto(chi, i).g;
-  if (!g || !el) return;
-  const t = ora(), span = el.querySelector('span');
-  if (t < g.fino) { el.className = 'abil attiva'; txt(span, durata((g.fino - t) / 1000)); el.disabled = true; }
-  else if (t < g.pronto) { el.className = 'abil ricarica'; txt(span, durata((g.pronto - t) / 1000)); el.disabled = true; }
-  else { el.className = 'abil pronta'; txt(span, 'Attiva'); el.disabled = false; }
+  const m = gest(chi, i);
+  if (!m || !el) return;
+  const [st, s] = statoDi(m), span = el.querySelector('span');
+  el.className = `abil ${st}`;
+  txt(span, st === 'pronta' ? 'Attiva' : durata(s));
+  el.disabled = st !== 'pronta';
 }
 function aggiorna(forza = false) {
   txt($('#soldi'), fmt(S.soldi));
   const ps = alSecondo();
   txt($('#alSec'), (ps ? `${fmt(ps)}/s · ad app chiusa ${fmt(ps * QUOTA_ASSENZA)}/s` : (gestoriAperti() ? 'Assumi i gestori per guadagnare da solo' : `Porta il chiosco al livello ${LIVELLO_GESTORI} per i gestori`)) + (S.rinnovo ? ` · ⭐ ×${moltRinnovo()}` : ''));
-  txt($('#modo'), MODI[S.modo] === 'max' ? 'Max' : `×${MODI[S.modo]}`);
   const pall = {
     potenzia: POTENZIAMENTI.some(u => !S.upg.includes(u.id) && S.soldi >= u.costo),
     rinnovo: !!RINNOVI[S.rinnovo] && S.soldi >= RINNOVI[S.rinnovo].costo,
@@ -326,11 +365,9 @@ function aggiorna(forza = false) {
     const on = !!pall[b.dataset.tab], has = b.querySelector('.pallino');
     if (on && !has) b.insertAdjacentHTML('beforeend', '<i class="pallino"></i>'); else if (!on && has) has.remove();
   }
-  if (aperta && sheet.open && performance.now() - ultimoDisegno > 300) disegnaSu();
-  else if (sheet.open && !aperta) for (const el of sheet.querySelectorAll('[data-attiva]')) { const [c, i] = el.dataset.attiva.split(':'); if (el.id) statoAbilita(c, +i, el); }
+  if (aperta && sheet.open && performance.now() - ultimoDisegno > 400) (aperta.tipo === 'su' ? disegnaSu : disegnaSquadra)();
   if (tab === 'gestori') {
-    for (const el of view.querySelectorAll('.abil[data-attiva]')) { const [c, i] = el.dataset.attiva.split(':'); statoAbilita(c, +i, el); }
-    for (const el of view.querySelectorAll('[data-gest]')) { const [c, i] = el.dataset.gest.split(':'); el.disabled = S.soldi < prezzoGestore(c, +i); }
+    if (performance.now() - ultimoDisegno > 1000 && !document.activeElement?.matches('select')) renderGestori();
     return;
   }
   if (tab !== 'paese') {
@@ -362,15 +399,16 @@ function aggiorna(forza = false) {
     const m = $(`#m${i}`);
     if (m) m.hidden = !(!l.g && l.w.every(w => w.fase === 'fermo'));
     txt($(`#bc${i}`), l.cassa >= 1 ? fmt(l.cassa) : '');
-    const k = quanti('b', i), c = costo('b', i, k), nc = nCommessi(l.L);
-    txt($(`#liv${i}`), `Liv. ${l.L}${k > 1 ? ` → ${l.L + k}` : ''}${nc > 1 ? ` · 👥${nc}` : ''}`);
-    txt($(`#prezzo${i}`), fmt(c));
-    const su = view.querySelector(`[data-su="b:${i}"]`);
-    if (su) { su.disabled = S.soldi < c; su.classList.toggle('scontato', !!abilita('b', i, 'sconto')); }
-    const gb = view.querySelector(`[data-gest="b:${i}"]`);
-    if (gb) gb.disabled = S.soldi < prezzoGestore('b', i);
+    if (depositi[i] && performance.now() - (ultimoVolo[i] ?? 0) > 700) {   // al massimo un "+€" ogni 0,7 s per bottega
+      volaDa($(`#bc${i}`)?.parentElement, depositi[i], 'piccolo'); delete depositi[i]; ultimoVolo[i] = performance.now();
+    }
+    const nc = nCommessi(l.L), tr = traguardo('b', i);
+    txt($(`#liv${i}`), `Liv. ${l.L}${nc > 1 ? ` · 👥 ${nc}` : ''}`);
+    txt($(`#prox${i}`), tr ? tr.testo : 'Livello massimo dei traguardi');
+    const bar = $(`#bar${i}`); if (bar) bar.style.width = `${(tr ? tr.quota : 1) * 100}%`;
+    targa($(`#tg-b${i}`), 'b', i);
     statoAbilita('b', i, $(`#ab-b${i}`));
-    if (l.g && ora() >= l.g.pronto) pronti++;
+    if (gest('b', i) && ora() >= gest('b', i).pronto) pronti++;
   });
   // Prossima bottega e lavori sulla scalinata
   const lv = lavori(), boxL = $('#lavori'), ap = view.querySelector('[data-apri]');
@@ -396,37 +434,54 @@ function aggiorna(forza = false) {
   $('#mApe').hidden = !(a.fase === 'fermo' && !a.g && S.deposito > 0);
   // Comandi di funicolare e Ape
   for (const chi of ['f', 'a']) {
-    const o = posto(chi, 0), k = quanti(chi, 0), c = costo(chi, 0, k);
-    txt($(`#liv-${chi}`), `Liv. ${o.L}${k > 1 ? ` → ${o.L + k}` : ''}`);
-    txt($(`#prezzo-${chi}`), fmt(c));
+    const o = posto(chi, 0), tr = traguardo(chi, 0);
+    txt($(`#liv-${chi}`), `Liv. ${o.L}`);
     txt($(`#info-${chi}`), `porta ${fmt(chi === 'f' ? capFuni() : capApe())} a viaggio`);
-    const su = view.querySelector(`[data-su="${chi}:0"]`);
-    if (su) { su.disabled = S.soldi < c; su.classList.toggle('scontato', !!abilita(chi, 0, 'sconto')); }
-    const gb = view.querySelector(`[data-gest="${chi}:0"]`);
-    if (gb) gb.disabled = S.soldi < prezzoGestore(chi, 0);
+    txt($(`#prox-${chi}`), tr ? tr.testo : chi === 'f' ? 'Tocca il deposito per migliorarla' : 'Ape al completo');
+    const bar = $(`#bar-${chi}`); if (bar) bar.style.width = `${(tr ? tr.quota : Math.min(1, (o.L % 10) / 10)) * 100}%`;
+    targa($(`#tg-${chi}`), chi, 0);
     statoAbilita(chi, 0, $(`#ab-${chi}0`));
-    if (o.g && ora() >= o.g.pronto) pronti++;
+    if (gest(chi, 0) && ora() >= gest(chi, 0).pronto) pronti++;
   }
   const at = $('#attivaTutti');
   if (at) { at.hidden = pronti < 2; txt(at, `⚡ Attiva tutti (${pronti})`); }
-  if (!gestoriAperti()) txt($('#collo'), '👆 Tocca il commesso, poi la funicolare, poi l\'Ape');
+  if (!gestoriAperti()) txt($('#collo'), '👆 Commesso → cabina → Ape. Tocca un edificio per migliorarlo');
   else {
     const c = collo();
     txt($('#collo'), `🐢 Collo di bottiglia: ${c === 'botteghe' ? 'le botteghe' : c === 'funi' ? 'la funicolare' : 'le Ape'}`);
   }
 }
 
+/** Targa del livello sull'edificio: verde con la freccia quando puoi permetterti almeno un livello. */
+function targa(el, chi, i) {
+  if (!el) return;
+  const puoi = S.soldi >= costo(chi, i, 1);
+  txt(el, `${puoi ? '⬆ ' : ''}Liv. ${posto(chi, i).L}`);
+  el.classList.toggle('puoi', puoi);
+}
+
 // ---------------------------------------------------------------- effetti
-function vola(x) {
-  if (tab !== 'paese' || document.hidden) return;
-  const m = view.querySelector('.merc');
-  if (!m) return;
-  const r = m.getBoundingClientRect();
-  const el = Object.assign(document.createElement('div'), { className: 'volo', textContent: '+' + fmt(x) });
-  el.style.left = `${r.left + 20}px`; el.style.top = `${r.top + 10}px`;
+function volaDa(dove, x, classe = '') {
+  if (!dove || tab !== 'paese' || document.hidden) return;
+  const r = dove.getBoundingClientRect();
+  if (r.bottom < 0 || r.top > innerHeight) return;   // fuori dallo schermo: niente animazione
+  const el = Object.assign(document.createElement('div'), { className: `volo ${classe}`, textContent: '+' + fmt(x) });
+  el.style.left = `${r.left + 4}px`; el.style.top = `${r.top - 6}px`;
   document.body.append(el);
   setTimeout(() => el.remove(), 1000);
 }
+const vola = x => volaDa(view.querySelector('.merc'), x);
+
+// Tenendo premuto "Sali di livello" si continua a comprare
+let ripeti = null;
+const smetti = () => { clearTimeout(ripeti); clearInterval(ripeti); ripeti = null; };
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest('[data-compra]');
+  if (!b) return;
+  smetti();
+  ripeti = setTimeout(() => { ripeti = setInterval(() => { const x = sheet.querySelector('[data-compra]'); if (x && !x.disabled) x.click(); else smetti(); }, 120); }, 450);
+});
+for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) document.addEventListener(ev, smetti);
 let toastT;
 function toast(t) {
   const el = $('#toast');
@@ -435,13 +490,64 @@ function toast(t) {
 }
 const vibra = p => { try { navigator.userActivation?.hasBeenActive && navigator.vibrate?.(p); } catch { /* niente vibrazione */ } };
 
+/** Attiva l'abilità del gestore assegnato al posto (se è pronta). */
 function attiva(chi, i) {
-  const g = posto(chi, i).g;
-  if (!g || ora() < g.pronto) return false;
-  const gr = GRADI[g.r];
-  g.fino = ora() + gr.durata * 1000;
-  g.pronto = ora() + (gr.durata + gr.ricarica) * 1000;
+  const m = gest(chi, i);
+  if (!m || ora() < m.pronto) return false;
+  const gr = GRADI[m.r];
+  m.fino = ora() + gr.durata * 1000;
+  m.pronto = ora() + (gr.durata + gr.ricarica) * 1000;
   return true;
+}
+/** Assume un gestore a caso (grado e abilità) nella squadra della zona; se c'è un posto vuoto indicato, ce lo mette. */
+function assumi(chi, i = null) {
+  const prezzo = prezzoAssunzione(chi);
+  if (S.soldi < prezzo || !gestoriAperti()) return null;
+  S.soldi -= prezzo;
+  let x = Math.random(), r = 0;
+  while (r < GRADI.length - 1 && x > GRADI[r].prob) { x -= GRADI[r].prob; r++; }
+  const usati = new Set(Object.values(S.staff).flat().map(m => m.nome));
+  const liberi = NOMI_GESTORI.filter(n => !usati.has(n));
+  const nome = (liberi.length ? liberi : NOMI_GESTORI)[Math.floor(Math.random() * (liberi.length || NOMI_GESTORI.length))];
+  const m = { id: Math.random().toString(36).slice(2, 9), nome, r, a: Math.floor(Math.random() * ABILITA[chi].length), fino: 0, pronto: 0, pagato: prezzo };
+  S.staff[chi].push(m);
+  if (i != null && !posto(chi, i).g) posto(chi, i).g = m.id;
+  return m;
+}
+/** Mette il gestore al posto i (lo toglie da dove era; chi era al posto i resta libero nella squadra). */
+function assegna(chi, id, i) {
+  if (chi === 'b') S.liv.forEach(l => { if (l.g === id) l.g = null; });
+  else if (posto(chi, 0).g === id) posto(chi, 0).g = null;
+  if (i >= 0) posto(chi, i).g = id;
+}
+function vendi(chi, id) {
+  const m = S.staff[chi].find(x => x.id === id);
+  if (!m) return;
+  assegna(chi, id, -1);
+  S.staff[chi] = S.staff[chi].filter(x => x !== m);
+  S.soldi += m.pagato / 2;
+}
+const nomeZona = chi => (chi === 'b' ? 'Botteghe' : chi === 'f' ? 'Funicolare' : 'Ape');
+const nomePosto = (chi, i) => (chi === 'b' ? BOTTEGHE[i].nome : nomeZona(chi));
+/** Una riga di gestore: nome, grado, abilità, stato; con i pulsanti adatti al contesto. */
+function rigaGestore(chi, m, posto_ = null) {
+  const ab = ABILITA[chi][m.a], gr = GRADI[m.r], dove = doveLavora(chi, m), [st, s] = statoDi(m);
+  const qui = posto_ != null && dove === posto_;
+  const stato = st === 'attiva' ? `<b class="st attiva">attiva ${durata(s)}</b>` : st === 'ricarica' ? `<b class="st ricarica">ricarica ${durata(s)}</b>` : '<b class="st pronta">pronta</b>';
+  const scelta = chi === 'b'
+    ? `<select data-assegna="b:${m.id}">${['<option value="-1">Libero</option>', ...S.liv.map((l, i) => (l.L ? `<option value="${i}" ${dove === i ? 'selected' : ''}>${BOTTEGHE[i].em} ${BOTTEGHE[i].nome}</option>` : '')).filter(Boolean)].join('')}</select>`
+    : dove === 0 ? '<small class="dove">al lavoro</small>' : `<button class="mini" data-assegna-qui="${chi}:${m.id}:0">Metti al lavoro</button>`;
+  return `<div class="gRiga ${qui ? 'qui' : ''}">
+    <span class="gAv" style="--r:${gr.colore}">🧑‍💼</span>
+    <span class="gT"><b>${m.nome}</b> <span class="grado" style="--r:${gr.colore}">${gr.nome}</span>
+      <small>${ab.em} ${ab.nome}: ${ab.testo(ab.effetto[m.r])} · dura ${durataLunga(gr.durata)}, ricarica ${durataLunga(gr.ricarica)}</small>
+      <small>${stato} · ${dove >= 0 ? (chi === 'b' ? `alla ${nomePosto(chi, dove)}` : 'al lavoro') : 'libero'}</small></span>
+    <span class="gAz">
+      ${posto_ != null && !qui ? `<button class="mini" data-assegna-qui="${chi}:${m.id}:${posto_}">Metti qui</button>` : ''}
+      ${posto_ == null ? scelta : ''}
+      ${dove >= 0 && st === 'pronta' ? `<button class="mini verde" data-attiva="${chi}:${dove}">${ab.em} Attiva</button>` : ''}
+      <button class="mini rosso" data-vendi="${chi}:${m.id}">Vendi ${fmt(m.pagato / 2)}</button>
+    </span></div>`;
 }
 // ---------------------------------------------------------------- scheda di potenziamento (bottega, funicolare, Ape)
 let aperta = null;   // scheda aperta che si aggiorna da sola: { tipo: 'su', chi, i }
@@ -461,12 +567,12 @@ function disegnaSu() {
     titolo = b.nome; em = b.em;
     righe = riga('Merce per giro', fmt(prodL(i, L)), fmt(prodL(i, L2)))
       + riga('Commessi', nCommessi(L), nCommessi(L2))
-      + riga('Al secondo', `${fmt(prodL(i, L) / giro)}/s`, `${fmt(prodL(i, L2) / giro)}/s`);
+      + riga('Al secondo', `${fmt(prodL(i, L) / cicloBottega(i))}/s`, `${fmt(prodL(i, L2) / cicloBottega(i))}/s`);
     const t = TAPPE.find(x => x > L), cm = COMMESSI.find(x => x > L);
     prossimi = [t && `🎉 Livello ${t}: produzione ×2`, cm && `👥 Livello ${cm}: un commesso in più`].filter(Boolean);
   } else if (chi === 'f') {
     titolo = 'Funicolare'; em = '🚡';
-    const viaggio = L => (2 * aperte() * F.perTerrazza + aperte() * F.carico) / velFuniL(L);
+    const viaggio = L => (2 * aperte() * F.perTerrazza + aperte() * F.carico) / velFuniL(L);   // senza abilità attive
     righe = riga('Porta a viaggio', fmt(capFuniL(L)), fmt(capFuniL(L2)))
       + riga('Velocità', `×${velFuniL(L).toLocaleString('it-IT', { maximumFractionDigits: 2 })}`, `×${velFuniL(L2).toLocaleString('it-IT', { maximumFractionDigits: 2 })}`)
       + riga('Al secondo', `${fmt(capFuniL(L) / viaggio(L))}/s`, `${fmt(capFuniL(L2) / viaggio(L2))}/s`);
@@ -487,7 +593,7 @@ function disegnaSu() {
     ${prossimi.length ? `<ul class="prossimi">${prossimi.map(p => `<li>${p}</li>`).join('')}</ul>` : ''}
     <div class="seg">${MODI.map((m, j) => `<button data-modo="${j}" class="${S.modo === j ? 'on' : ''}">${m === 'max' ? 'Max' : `×${m}`}</button>`).join('')}</div>
     <button class="primary" data-compra="${chi}:${i}" ${S.soldi >= c ? '' : 'disabled'}>Sali di ${k} ${k === 1 ? 'livello' : 'livelli'} · ${fmt(c)}${sc ? ` <small>(−${Math.round(sc * 100)}%)</small>` : ''}</button>
-    <div class="sGest">${slotGestore(chi, i)}<span class="note">${posto(chi, i).g ? `${GRADI[posto(chi, i).g.r].nome}: ${ABILITA[chi][posto(chi, i).g.a].testo(ABILITA[chi][posto(chi, i).g.a].effetto[posto(chi, i).g.r])}` : gestoriAperti() ? 'Un gestore lavora per te e ha un\'abilità speciale' : `Gestori dal livello ${LIVELLO_GESTORI} del chiosco`}</span></div>
+    <div class="sGest">${slotGestore(chi, i)}<span class="note">${gest(chi, i) ? `${gest(chi, i).nome} (${GRADI[gest(chi, i).r].nome}): ${ABILITA[chi][gest(chi, i).a].testo(ABILITA[chi][gest(chi, i).a].effetto[gest(chi, i).r])}` : gestoriAperti() ? 'Nessun gestore: tocca 🧑‍💼 per sceglierne o assumerne uno' : `Gestori dal livello ${LIVELLO_GESTORI} del chiosco`}</span></div>
   </div>`;
   statoAbilita(chi, i, sheet.querySelector(`#ab-${chi}${i}`));
   ultimoDisegno = performance.now();
@@ -495,30 +601,39 @@ function disegnaSu() {
 
 // ---------------------------------------------------------------- pagina dei gestori
 function renderGestori() {
-  const posti = [['f', 0, '🚡', 'Funicolare'], ['a', 0, '🛺', 'Ape'], ...S.liv.map((l, i) => (l.L ? ['b', i, BOTTEGHE[i].em, BOTTEGHE[i].nome] : null)).filter(Boolean)];
+  if (!gestoriAperti()) {
+    view.innerHTML = `<h2>Gestori</h2><div class="card">🔒 I gestori arrivano quando il chiosco delle granite raggiunge il <b>livello ${LIVELLO_GESTORI}</b>.<p class="note">Un gestore resta fisso al suo posto e lo fa lavorare da solo, anche ad app chiusa. In più ha un'abilità speciale da attivare.</p></div>`;
+    ultimoDisegno = performance.now();
+    return;
+  }
+  const zona = (chi, em) => `<h2>${em} ${nomeZona(chi)} <small>${S.staff[chi].length} ${S.staff[chi].length === 1 ? 'gestore' : 'gestori'}</small></h2>
+    ${chi === 'b' ? `<p class="note">Posti con il gestore: ${S.liv.filter(l => l.L && l.g).length} su ${aperte()}.</p>` : ''}
+    <div class="card squadra">${S.staff[chi].map(m => rigaGestore(chi, m)).join('') || '<p class="note">Nessun gestore in squadra.</p>'}
+      <button class="primary" data-assumi="${chi}" ${S.soldi >= prezzoAssunzione(chi) ? '' : 'disabled'}>🧑‍💼 Assumi un gestore · ${fmt(prezzoAssunzione(chi))}</button></div>`;
   view.innerHTML = `<h2>Gestori</h2>
-    <p class="note">${gestoriAperti() ? 'Un gestore fa lavorare il suo posto da solo (anche ad app chiusa, a metà ritmo) e ha un\'abilità da attivare: dura qualche minuto, poi si ricarica. I gradi: Apprendista, Esperto, Maestro (più raro, più forte).' : `I gestori arrivano quando il chiosco delle granite raggiunge il livello ${LIVELLO_GESTORI}.`}</p>
-    ${gestoriAperti() ? '<button class="primary" data-attiva-tutti style="margin:0 16px 6px;width:calc(100% - 32px)">⚡ Attiva tutte le abilità pronte</button>' : ''}
-    ${posti.map(([chi, i, em, nome]) => {
-      const g = posto(chi, i).g, ab = g && ABILITA[chi][g.a];
-      return `<div class="voce gv"><span class="em">${em}</span><span class="t"><b>${nome}</b>
-        <small>${g ? `<span class="grado" style="--r:${GRADI[g.r].colore}">${GRADI[g.r].nome}</span> ${ab.em} ${ab.testo(ab.effetto[g.r])} · ${durataLunga(GRADI[g.r].durata)}` : 'Nessun gestore'}</small>
-        ${g ? `<button class="link" data-licenzia="${chi}:${i}">Licenzia (rimborso ${fmt(g.pagato / 2)})</button>` : ''}</span>
-        <span class="azione">${slotGestore(chi, i)}</span></div>`;
-    }).join('')}`;
+    <p class="note">Il gestore resta fisso al suo posto e lo fa lavorare da solo (anche ad app chiusa, a metà ritmo). Ha anche un'<b>abilità speciale</b>: la attivi tu, dura qualche minuto e poi si ricarica. La ricarica è del gestore: se hai più gestori puoi scambiarli e usare quello con l'abilità pronta.</p>
+    <div class="card legenda">${GRADI.map(g => `<span><span class="grado" style="--r:${g.colore}">${g.nome}</span> dura ${durataLunga(g.durata)} · ricarica ${durataLunga(g.ricarica)} · esce ${Math.round(g.prob * 100)}%</span>`).join('')}</div>
+    <button class="primary" data-attiva-tutti style="margin:0 16px 6px;width:calc(100% - 32px)">⚡ Attiva tutte le abilità pronte</button>
+    ${zona('f', '🚡')}${zona('a', '🛺')}${zona('b', '🏪')}`;
+  ultimoDisegno = performance.now();
 }
 
-function schedaGestore(chi, i) {
-  aperta = null;
-  const g = posto(chi, i).g, gr = GRADI[g.r], ab = ABILITA[chi][g.a], dove = chi === 'b' ? BOTTEGHE[i].nome : chi === 'f' ? 'Funicolare' : 'Ape';
-  sheet.innerHTML = `<div style="font-size:44px">🧑‍💼</div>
-    <h3 style="margin:4px 0">${gr.nome} · ${dove}</h3>
-    <p style="margin:4px 0"><b>${ab.em} ${ab.nome}</b>: ${ab.testo(ab.effetto[g.r])}</p>
-    <p class="note">Dura ${durataLunga(gr.durata)}, poi si ricarica in ${durataLunga(gr.ricarica)}. Intanto il gestore fa lavorare ${chi === 'b' ? 'i commessi' : chi === 'f' ? 'la funicolare' : 'le Ape'} da solo.</p>
-    <button class="primary" data-attiva="${chi}:${i}" ${ora() >= g.pronto ? '' : 'disabled'}>${ora() >= g.pronto ? `${ab.em} Attiva ${ab.nome}` : `Si ricarica: ${durata((g.pronto - ora()) / 1000)}`}</button>
-    <button class="link" data-licenzia="${chi}:${i}">Licenzia (ti ridanno ${fmt(g.pagato / 2)}) e assumine un altro</button>
-    <button class="link" data-chiudi>Chiudi</button>`;
-  sheet.showModal();
+/** Scheda della squadra di una zona, aperta dal posto i: si sceglie chi mettere lì, si assume, si vende. */
+function schedaSquadra(chi, i) {
+  aperta = { tipo: 'squadra', chi, i };
+  disegnaSquadra();
+  if (!sheet.open) sheet.showModal();
+}
+function disegnaSquadra() {
+  const { chi, i } = aperta, m = gest(chi, i);
+  const lista = [...S.staff[chi]].sort((x, y) => (doveLavora(chi, y) === i) - (doveLavora(chi, x) === i) || (doveLavora(chi, x) >= 0) - (doveLavora(chi, y) >= 0));
+  sheet.innerHTML = `<div class="scheda">
+    <div class="sTitolo"><span>🧑‍💼</span><div><b>Gestore · ${nomePosto(chi, i)}</b><small>${m ? `${m.nome} lavora qui` : 'Nessun gestore a questo posto'}</small></div><button class="chiudi" data-chiudi aria-label="Chiudi">✕</button></div>
+    <div class="squadra">${lista.map(x => rigaGestore(chi, x, i)).join('') || '<p class="note">La squadra è vuota: assumi il primo gestore.</p>'}</div>
+    <button class="primary" data-assumi="${chi}:${i}" ${S.soldi >= prezzoAssunzione(chi) ? '' : 'disabled'}>🧑‍💼 Assumi un gestore · ${fmt(prezzoAssunzione(chi))}</button>
+    <p class="note">Esce a caso: Junior 65%, Senior 27%, Executive 8%. Il prezzo sale a ogni gestore in squadra; vendendo ti ridanno metà di quanto l'hai pagato.</p>
+  </div>`;
+  ultimoDisegno = performance.now();
 }
 
 // ---------------------------------------------------------------- tocchi
@@ -527,7 +642,6 @@ document.addEventListener('click', e => {
   let el;
   if (on('[data-chiudi]')) { sheet.close(); return; }
   if ((el = on('#nav button'))) { tab = el.dataset.tab; render(); scrollTo(0, 0); return; }
-  if (on('#modo')) { S.modo = (S.modo + 1) % MODI.length; aggiorna(); return; }
   if ((el = on('[data-su]'))) { const [chi, i] = el.dataset.su.split(':'); schedaSu(chi, +i); return; }
   if ((el = on('[data-modo]'))) { S.modo = +el.dataset.modo; if (aperta) disegnaSu(); aggiorna(); return; }
   if ((el = on('[data-compra]'))) {
@@ -545,20 +659,31 @@ document.addEventListener('click', e => {
     if (aperta) disegnaSu();
     aggiorna(); salva(); return;
   }
-  if ((el = on('[data-gest]'))) {
-    const [chi, si] = el.dataset.gest.split(':'), i = +si, prezzo = prezzoGestore(chi, i);
-    if (S.soldi < prezzo || !gestoriAperti()) return;
-    S.soldi -= prezzo;
-    let x = Math.random(), r = 0;
-    while (r < GRADI.length - 1 && x > GRADI[r].prob) { x -= GRADI[r].prob; r++; }
-    const g = { r, a: Math.floor(Math.random() * ABILITA[chi].length), fino: 0, pronto: 0, pagato: prezzo };
-    posto(chi, i).g = g;
-    render(); salva(); schedaGestore(chi, i); return;
+  const ridisegna = () => { if (aperta) (aperta.tipo === 'su' ? disegnaSu : disegnaSquadra)(); render(); salva(); };
+  if ((el = on('[data-squadra]'))) { const [chi, i] = el.dataset.squadra.split(':'); if (gestoriAperti()) schedaSquadra(chi, +i); return; }
+  if ((el = on('[data-assumi]'))) {
+    const [chi, si] = el.dataset.assumi.split(':'), m = assumi(chi, si == null ? null : +si);
+    if (!m) return;
+    const ab = ABILITA[chi][m.a];
+    toast(`${m.r === 2 ? '🌟 ' : ''}${m.nome}, ${GRADI[m.r].nome}: ${ab.em} ${ab.nome}`);
+    vibra(m.r === 2 ? [30, 60, 30] : 15);
+    ridisegna(); return;
   }
-  if ((el = on('[data-info]'))) { const [chi, i] = el.dataset.info.split(':'); schedaGestore(chi, +i); return; }
+  if ((el = on('[data-assegna-qui]'))) { const [chi, id, i] = el.dataset.assegnaQui.split(':'); assegna(chi, id, +i); ridisegna(); return; }
+  if ((el = on('[data-vendi]'))) {
+    const [chi, id] = el.dataset.vendi.split(':'), m = S.staff[chi].find(x => x.id === id);
+    if (!m || !confirm(`Vendere ${m.nome} (${GRADI[m.r].nome})? Ti ridanno ${fmt(m.pagato / 2)}.`)) return;
+    vendi(chi, id); toast(`${m.nome} è andato via: +${fmt(m.pagato / 2)}`); ridisegna(); return;
+  }
   if ((el = on('[data-attiva]'))) {
     const [chi, i] = el.dataset.attiva.split(':');
-    if (attiva(chi, +i)) { vibra(15); toast('⚡ Abilità attivata!'); if (aperta) disegnaSu(); else if (sheet.open) sheet.close(); aggiorna(); salva(); }
+    if (attiva(chi, +i)) {
+      const m = gest(chi, +i), ab = ABILITA[chi][m.a];
+      vibra(15); toast(`${ab.em} ${m.nome}: ${ab.nome} per ${durataLunga(GRADI[m.r].durata)}!`);
+      if (aperta) (aperta.tipo === 'su' ? disegnaSu : disegnaSquadra)();
+      if (tab === 'gestori') renderGestori();
+      aggiorna(); salva();
+    }
     return;
   }
   if (on('[data-attiva-tutti]')) {
@@ -566,13 +691,9 @@ document.addEventListener('click', e => {
     S.liv.forEach((l, i) => { if (l.L && attiva('b', i)) n++; });
     if (attiva('f', 0)) n++;
     if (attiva('a', 0)) n++;
-    if (n) { vibra(20); toast(`⚡ ${n} abilità attivate!`); aggiorna(); salva(); }
+    if (n) { vibra(20); toast(`⚡ ${n} abilità attivate!`); if (tab === 'gestori') renderGestori(); aggiorna(); salva(); }
+    else toast('Nessuna abilità pronta in questo momento');
     return;
-  }
-  if ((el = on('[data-licenzia]'))) {
-    const [chi, i] = el.dataset.licenzia.split(':'), o = posto(chi, +i);
-    S.soldi += o.g.pagato / 2; o.g = null;
-    sheet.close(); render(); salva(); toast('Gestore licenziato: puoi assumerne un altro'); return;
   }
   if ((el = on('[data-apri]'))) {
     const i = +el.dataset.apri, b = BOTTEGHE[i];
@@ -625,6 +746,14 @@ document.addEventListener('click', e => {
     sheet.showModal(); return;
   }
   if (on('[data-conferma-azzera]')) { S = nuovo(); sheet.close(); tab = 'paese'; render(); salva(); }
+});
+// Scelta del posto dalla pagina Gestori (menu a tendina per le botteghe)
+document.addEventListener('change', e => {
+  const s = e.target.closest('[data-assegna]');
+  if (!s) return;
+  const [chi, id] = s.dataset.assegna.split(':');
+  assegna(chi, id, +s.value);
+  s.blur(); render(); salva();
 });
 addEventListener('resize', () => { if (tab === 'paese' && Math.abs((view.clientWidth || 360) - W) > 4) render(); });
 
