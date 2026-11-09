@@ -645,6 +645,30 @@ document.addEventListener('visibilitychange', () => {
 });
 addEventListener('pagehide', salva);
 
+// Aggiornamenti dell'APK (guscio Android): se su GitHub c'è una release più nuova, si propone di installarla.
+const native = window.Android;
+let apkNuovo = null;
+const piuNuova = (a, b) => {
+  const pa = a.split('.').map(Number), pb = b.split('.').map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) > (pb[i] ?? 0);
+  return false;
+};
+async function controllaApk() {
+  if (!native?.appVersion) return;
+  try {
+    const rel = await (await fetch('https://api.github.com/repos/Gavao/ga-tycoon/releases/latest')).json();
+    const v = rel.tag_name?.replace(/^v/, ''), file = rel.assets?.find(a => a.name.endsWith('.apk'));
+    apkNuovo = v && file && piuNuova(v, native.appVersion()) ? { v, url: file.browser_download_url } : null;
+    const b = $('#aggiornaApk');
+    if (b) { b.hidden = !apkNuovo; if (apkNuovo) b.textContent = `⬆️ Aggiorna l'app alla versione ${apkNuovo.v}`; }
+  } catch { /* offline */ }
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#aggiornaApk') || !apkNuovo) return;
+  native.installUpdate(apkNuovo.url);
+  toast('Download in corso: al termine si apre l\'installazione');
+});
+
 async function controllaVersione() {
   try {
     const v = (await (await fetch('version.txt', { cache: 'no-store' })).text()).trim();
@@ -657,4 +681,5 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.se
 guadagniAssenza();
 render();
 requestAnimationFrame(frame);
+controllaApk();
 window.gioco = { get S() { return S; }, fmt, avanza, render, salva, guadagniAssenza, ritmi, aggiorna };   // per le prove

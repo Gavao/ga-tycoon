@@ -193,3 +193,5 @@ dialog .grande { margin: 6px 0; }
 .sGest { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
 .sGest .note { flex: 1; margin: 0; }
 .primary small { font-weight: 700; }
+.aggiornaApk { display: block; width: calc(100% - 24px); max-width: 616px; margin: 8px auto; padding: 10px; border-radius: 12px; background: #8fd3a5; color: #123d22; font-weight: 900; }
+.aggiornaApk[hidden] { display: none; }
