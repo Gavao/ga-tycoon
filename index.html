@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#1a1208">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="GA Tycoon">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="css/style.css">
+  <title>GA Tycoon · Corso Italia</title>
+</head>
+<body>
+  <header id="top">
+    <div class="soldi"><span id="soldi">€0</span><small id="alSec">€0 al secondo</small></div>
+    <button id="modo" class="modo" aria-label="Quantità da comprare">×1</button>
+  </header>
+  <main id="view"></main>
+  <nav id="nav">
+    <button data-tab="paese" class="on"><span>🏘️</span>Paese</button>
+    <button data-tab="gestori"><span>🧑‍💼</span>Gestori</button>
+    <button data-tab="potenzia"><span>⚡</span>Potenzia</button>
+    <button data-tab="rinnovo"><span>⭐</span>Rinnovo</button>
+  </nav>
+  <div id="toast" class="toast" hidden></div>
+  <dialog id="sheet"></dialog>
+  <script type="module" src="js/game.js"></script>
+</body>
+</html>

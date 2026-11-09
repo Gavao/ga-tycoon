@@ -1,0 +1,195 @@
+/* GA Tycoon: il corso a terrazze sul mare, colori caldi della Costiera. */
+:root {
+  --bg: #1a1208;
+  --panel: #2a1d0f;
+  --panel-2: #3a2914;
+  --line: #4d3618;
+  --text: #fff4e2;
+  --muted: #c9ac85;
+  --oro: #ffc24b;
+  --oro-ink: #3a2400;
+  --verde: #6fdc8c;
+  --rosso: #ff7a6b;
+  --nav-h: 64px;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none;
+  overscroll-behavior-y: contain;
+}
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+button:disabled { cursor: default; }
+
+header {
+  position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 10px;
+  padding: calc(8px + env(safe-area-inset-top)) 14px 8px; background: rgba(26, 18, 8, .94); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.soldi { flex: 1; min-width: 0; }
+#soldi { display: block; font-size: 26px; font-weight: 900; color: var(--oro); letter-spacing: -.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#alSec { color: var(--muted); font-size: 12.5px; }
+.modo { min-width: 62px; padding: 9px 12px; border-radius: 12px; background: var(--panel-2); border: 1px solid var(--line); font-weight: 800; }
+
+main { max-width: 640px; margin: 0 auto; padding: 0 0 calc(var(--nav-h) + env(safe-area-inset-bottom)); }
+main > h2, main > .note, main > .voce, main > .card, main > .link { margin-left: 16px; margin-right: 16px; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 16px 2px 8px; }
+.note { color: var(--muted); font-size: 13px; margin: 6px 2px; }
+
+/* ---------------------------------------------------------------- scena */
+#scena { position: relative; overflow: hidden; background: #7fc4e8; }
+.cielo { position: absolute; inset: 0 0 auto 0; height: 160px; background: linear-gradient(#7fc4e8, #bfe6f5 70%); overflow: hidden; }
+.sole { position: absolute; top: 18px; right: 28px; width: 46px; height: 46px; border-radius: 50%; background: #ffe066; box-shadow: 0 0 30px #ffe06699; }
+.colle { position: absolute; bottom: 0; border-radius: 50% 50% 0 0; }
+.c1 { left: -40px; width: 260px; height: 110px; background: #7dbb6a; }
+.c2 { right: -60px; width: 300px; height: 90px; background: #5fa65a; }
+.piazza { position: absolute; inset: 0 0 auto 0; height: 290px; background: linear-gradient(transparent 160px, #d9c7a6 160px); }
+.strada { position: absolute; left: 0; right: 0; top: 150px; height: 18px; background: #b9a58a; border-top: 3px solid #d8c7ad; }
+.piazza::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: #c9b08a; }
+.dep { position: absolute; left: 8px; top: 60px; width: 104px; cursor: pointer; }
+.merc { position: absolute; right: 8px; top: 62px; width: 104px; }
+.dep svg, .merc svg { width: 100%; display: block; }
+.apeBox { position: absolute; left: 0; top: 112px; width: 74px; z-index: 3; cursor: pointer; }
+.apeBox svg { width: 100%; display: block; }
+.apeBox .merce { opacity: 0; }
+.apeBox.carica .merce { opacity: 1; }
+.apeBox.va .ruota { animation: gira .4s linear infinite; transform-origin: center; transform-box: fill-box; }
+@keyframes gira { to { transform: rotate(360deg); } }
+.comandi { position: absolute; left: 74px; right: 8px; top: 182px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; z-index: 4; }
+.cmd { background: rgba(42, 29, 15, .92); border: 1px solid var(--line); border-radius: 12px; padding: 5px 6px; min-width: 0; }
+.cmd b { font-size: 12.5px; display: block; }
+.cmd small { color: var(--muted); font-size: 10.5px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmdRiga { display: flex; gap: 4px; margin-top: 3px; }
+.collo { position: absolute; left: 0; right: 0; top: 4px; text-align: center; font-size: 12px; font-weight: 700; color: #1d3b4f; }
+
+.binario { position: absolute; left: 38px; top: 168px; width: 10px; background: repeating-linear-gradient(#5b4a3a 0 4px, #7a6552 4px 14px); border-left: 2px solid #3d2f22; border-right: 2px solid #3d2f22; z-index: 2; cursor: pointer; }
+.cabinaBox { position: absolute; left: 21px; top: 0; width: 44px; z-index: 6; cursor: pointer; will-change: transform; }
+.cabinaBox svg { width: 100%; display: block; }
+
+.terrazza { position: absolute; left: 0; right: 0; height: 136px; border-top: 6px solid #c9b08a; }
+.terrazza .muro { position: absolute; inset: 0; opacity: .95; }
+.terrazza .muro::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 36px; background: #d8c3a0; border-top: 2px solid #bfa57e; }
+.bottega { position: absolute; right: 10px; top: 8px; width: calc(100% - 150px); max-width: 300px; height: 88px; background: #fffaf0; border: 2px solid #0002; border-radius: 6px 6px 0 0; cursor: pointer; overflow: hidden; }
+.tenda { height: 18px; background: repeating-linear-gradient(90deg, var(--t) 0 16px, #fff 16px 32px); border-bottom: 3px solid #0002; }
+.insegna { position: absolute; top: 22px; left: 8px; right: 8px; font-size: 12px; font-weight: 900; color: #3a2400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vetrina { position: absolute; left: 10px; bottom: 6px; width: 52px; height: 34px; background: #bfe3f2; border: 2px solid #8a5a2b; border-radius: 3px; display: grid; place-items: center; font-size: 20px; }
+.porta { position: absolute; right: 14px; bottom: 0; width: 26px; height: 46px; background: #8a5a2b; border-radius: 3px 3px 0 0; }
+.cassetta { position: absolute; left: 62px; top: 66px; width: 30px; height: 24px; background: #c98b4a; border: 2px solid #8a5a2b; border-radius: 3px; z-index: 3; }
+.cassetta::before { content: ''; position: absolute; inset: 6px 2px auto; height: 2px; background: #8a5a2b; }
+.commesso { position: absolute; left: 0; top: 50px; width: 30px; z-index: 4; cursor: pointer; will-change: transform; }
+.omino { width: 30px; height: 46px; display: block; overflow: visible; }
+.omino .cassa { display: none; }
+.commesso.porta .omino .cassa { display: inline; }
+.commesso.cammina .gs { animation: passo .35s ease-in-out infinite alternate; transform-origin: 13px 31px; }
+.commesso.cammina .gd { animation: passo .35s ease-in-out infinite alternate-reverse; transform-origin: 18px 31px; }
+@keyframes passo { from { transform: rotate(-22deg); } to { transform: rotate(22deg); } }
+.commesso.lavora .braccio { animation: lavoro .3s ease-in-out infinite alternate; transform-origin: 21px 21px; }
+@keyframes lavoro { to { transform: rotate(-60deg); } }
+.pedana { position: absolute; left: 6px; right: 6px; bottom: 4px; display: flex; align-items: center; gap: 6px; z-index: 5; }
+.liv { flex: 1; text-align: right; font-size: 12px; font-weight: 800; color: #3a2400; white-space: nowrap; }
+.su, .assumi { display: inline-flex; align-items: center; gap: 4px; padding: 5px 8px; border-radius: 9px; background: var(--oro); color: var(--oro-ink); font-weight: 900; font-size: 12px; white-space: nowrap; box-shadow: 0 2px 0 #b8861f; }
+.su small, .assumi small { font-weight: 800; }
+.cmd .su { flex: 1; justify-content: space-between; min-width: 0; padding: 4px 6px; font-size: 11px; }
+.cmd .su small { color: inherit; display: inline; font-size: 11px; }
+.cmd b i { font-style: normal; font-weight: 700; color: var(--oro); font-size: 11px; }
+.assumi { background: #8fd3a5; box-shadow: 0 2px 0 #4f9a68; color: #123d22; }
+.su:disabled, .assumi:disabled { background: #cdbfa9; color: #7c6b55; box-shadow: none; }
+.gest { font-size: 20px; }
+.bolla { position: absolute; left: 50%; top: -20px; transform: translateX(-50%); padding: 1px 6px; border-radius: 999px; background: #fff; color: #3a2400; font-size: 11px; font-weight: 900; white-space: nowrap; box-shadow: 0 1px 3px #0004; pointer-events: none; }
+.bolla:empty { display: none; }
+.cabinaBox .bolla { top: 14px; left: 66px; transform: none; }
+.mano { position: absolute; top: -26px; left: 50%; transform: translateX(-50%); font-size: 20px; animation: indica 0.8s ease-in-out infinite alternate; pointer-events: none; }
+.mano[hidden] { display: none; }
+@keyframes indica { to { transform: translate(-50%, 6px); } }
+.commesso .mano { top: -24px; }
+.cabinaBox .mano { top: 6px; left: 60px; }
+
+.terrazza.chiusa .muro { filter: saturate(.4) brightness(.8); }
+.apri { position: absolute; left: 50%; top: 40px; transform: translateX(-50%); width: calc(100% - 100px); max-width: 320px; padding: 12px 14px; border-radius: 14px; background: var(--oro); color: var(--oro-ink); font-weight: 900; display: flex; justify-content: space-between; gap: 8px; box-shadow: 0 3px 0 #b8861f; }
+.apri:disabled { background: #e7dccb; color: #7c6b55; box-shadow: none; }
+.albero { position: absolute; top: 46px; width: 40px; z-index: 1; transform-origin: bottom; }
+.mare { position: absolute; left: 0; right: 0; height: 220px; background: linear-gradient(#2f8fc9, #1d5f8f); border-top: 6px solid #e9dcc0; }
+.mare span { position: absolute; top: 30px; font-size: 30px; animation: onda 3s ease-in-out infinite alternate; }
+.mare span:first-child { left: 22%; } .mare span:last-child { left: 64%; top: 64px; animation-delay: -1.5s; }
+@keyframes onda { to { transform: translate(14px, 4px) rotate(4deg); } }
+
+/* ---------------------------------------------------------------- liste e schede */
+.voce { display: flex; gap: 12px; align-items: center; padding: 12px; margin: 8px 0; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); }
+.voce .em { font-size: 28px; width: 40px; text-align: center; }
+.voce .t { flex: 1; min-width: 0; }
+.voce .t b { display: block; }
+.voce .t small { color: var(--muted); font-size: 12.5px; }
+.voce button { padding: 9px 12px; border-radius: 11px; background: var(--oro); color: var(--oro-ink); font-weight: 900; white-space: nowrap; }
+.voce button:disabled { background: var(--panel-2); color: var(--muted); }
+.card { padding: 14px; border-radius: 18px; background: var(--panel); border: 1px solid var(--line); margin: 10px 0; }
+.card .riga { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; }
+.grande { font-size: 34px; font-weight: 900; color: var(--oro); }
+.primary { width: 100%; padding: 14px; border-radius: 14px; background: var(--oro); color: var(--oro-ink); font-weight: 900; font-size: 16px; margin-top: 10px; }
+.primary:disabled { background: var(--panel-2); color: var(--muted); }
+.link { color: var(--muted); text-decoration: underline; font-size: 13px; padding: 10px 0; }
+
+nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 20; display: flex; height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom); background: rgba(26, 18, 8, .96); border-top: 1px solid var(--line); }
+nav button { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 12px; font-weight: 700; color: var(--muted); position: relative; }
+nav button span { font-size: 22px; }
+nav button.on { color: var(--oro); }
+nav button .pallino { position: absolute; top: 8px; right: calc(50% - 20px); width: 9px; height: 9px; border-radius: 50%; background: var(--rosso); }
+
+.toast { position: fixed; left: 50%; bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 30;
+  max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 12px; background: #000d; color: #fff; font-weight: 600; text-align: center; }
+.volo { position: fixed; z-index: 25; pointer-events: none; font-weight: 900; font-size: 18px; color: var(--oro); text-shadow: 0 2px 4px #000c, 0 0 2px #000; animation: vola 1s ease-out forwards; }
+@keyframes vola { to { transform: translateY(-50px); opacity: 0; } }
+
+dialog { border: 0; border-radius: 22px; padding: 20px; max-width: min(420px, calc(100vw - 32px)); background: var(--panel); color: var(--text); text-align: center; }
+dialog::backdrop { background: #000a; }
+dialog .grande { margin: 6px 0; }
+
+/* ---------------------------------------------------------------- gestori e abilità */
+.lucchetto { font-size: 16px; opacity: .7; }
+.gestore { width: 32px; height: 32px; border-radius: 50%; background: #fff; border: 3px solid var(--r, #8fd3a5); font-size: 17px; display: grid; place-items: center; flex: none; }
+.abil { display: inline-flex; align-items: center; gap: 3px; padding: 5px 7px; border-radius: 9px; font-size: 11.5px; font-weight: 900; white-space: nowrap; }
+.abil.pronta { background: #8fd3a5; color: #123d22; box-shadow: 0 2px 0 #4f9a68; animation: pronto 1.2s ease-in-out infinite; }
+@keyframes pronto { 50% { transform: scale(1.06); } }
+.abil.attiva { background: var(--oro); color: var(--oro-ink); }
+.abil.ricarica { background: #cdbfa9; color: #6d5d48; }
+.cmd .gestore { width: 26px; height: 26px; font-size: 14px; border-width: 2px; }
+.cmd .abil { padding: 4px 5px; font-size: 10.5px; }
+.cmd .assumi { padding: 4px 6px; font-size: 11px; }
+.su.scontato { background: #8fd3a5; box-shadow: 0 2px 0 #4f9a68; }
+.attivaTutti { position: absolute; right: 8px; top: 26px; z-index: 5; padding: 7px 10px; border-radius: 11px; background: #8fd3a5; color: #123d22; font-weight: 900; font-size: 12.5px; box-shadow: 0 2px 0 #4f9a68; }
+.attivaTutti[hidden] { display: none; }
+.nApe { position: absolute; left: 4px; top: -6px; padding: 0 5px; border-radius: 8px; background: #22704a; color: #fff; font-size: 11px; font-weight: 900; }
+.nApe:empty { display: none; }
+.lavori { position: absolute; left: 50%; top: 26px; transform: translateX(-50%); width: calc(100% - 90px); max-width: 330px; padding: 10px 12px; border-radius: 14px;
+  background: repeating-linear-gradient(45deg, #ffcf3f 0 14px, #2b2b2b 14px 28px); color: #fff; text-align: center; z-index: 3; }
+.lavori > * { position: relative; }
+.lavori b, .lavori span { display: block; background: #2b2b2bdd; border-radius: 8px; padding: 2px 6px; margin-bottom: 4px; }
+.lavori .su { margin-top: 2px; }
+.lavori[hidden], .apri[hidden] { display: none; }
+
+/* pagina gestori */
+.gv .t .link { padding: 4px 0 0; font-size: 12px; }
+.gv .azione { display: flex; gap: 6px; align-items: center; }
+.grado { display: inline-block; padding: 0 6px; border-radius: 6px; background: var(--r); color: #1d1206; font-weight: 800; font-size: 11px; }
+
+/* scheda di potenziamento */
+.scheda { text-align: left; width: min(380px, calc(100vw - 72px)); }
+.sTitolo { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.sTitolo > span { font-size: 36px; }
+.sTitolo div { flex: 1; }
+.sTitolo b { display: block; font-size: 18px; }
+.sTitolo small { color: var(--muted); }
+.chiudi { width: 34px; height: 34px; border-radius: 50%; background: var(--panel-2); font-size: 16px; }
+.stat { width: 100%; border-collapse: collapse; margin: 6px 0; }
+.stat td { padding: 7px 4px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.stat td:nth-child(2) { font-weight: 800; text-align: right; }
+.stat td.dopo { color: var(--verde); font-weight: 800; text-align: right; white-space: nowrap; width: 1%; padding-left: 8px; }
+.prossimi { margin: 6px 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+.seg { display: flex; gap: 4px; background: var(--bg); border: 1px solid var(--line); padding: 4px; border-radius: 12px; margin-top: 10px; }
+.seg button { flex: 1; padding: 8px; border-radius: 9px; font-weight: 800; color: var(--muted); }
+.seg button.on { background: var(--oro); color: var(--oro-ink); }
+.sGest { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.sGest .note { flex: 1; margin: 0; }
+.primary small { font-weight: 700; }
