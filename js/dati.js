@@ -11,43 +11,57 @@ export const LARGHEZZA = 360;
 export const CORSO = { x1: 160, x2: 200, marcL: 154, marcR: 206 };
 export const QUARTIERI = [
   { nome: 'Piazza', y: 0, fine: 410, lavori: 0 },
-  { nome: 'Centro', y: 410, fine: 790, lavori: 10 * 60 },
-  { nome: 'Lungomare', y: 790, fine: 1170, lavori: 60 * 60 },
-  { nome: 'Porto', y: 1170, fine: 1470, lavori: 3 * 3600 },
+  { nome: 'Centro', y: 410, fine: 790, lavori: 20 * 60 },
+  { nome: 'Lungomare', y: 790, fine: 1170, lavori: 2 * 3600 },
+  { nome: 'Borgo antico', y: 1170, fine: 1550, lavori: 4 * 3600 },
+  { nome: 'Porto', y: 1550, fine: 1850, lavori: 8 * 3600 },
 ];
 
 /**
  * Edifici in ordine di apertura. tipo: negozio | attrazione | ingresso. lato: L/R; y,h: lotto.
  * Negozi e attrazioni: prezzo = euro per cliente al livello 1, servizio = secondi per cliente, su = primo potenziamento.
  * Ingressi: ogni = secondi tra un arrivo e l'altro, gente = persone per arrivo (crescono con il livello).
+ * tavoli: tavolini all'aperto davanti al locale.
  */
 export const EDIFICI = [
   { id: 'parcheggio', tipo: 'ingresso', mezzo: 'auto', nome: 'Parcheggio', em: '🅿️', lato: 'L', y: 18, h: 128, q: 0, apri: 0, ogni: 7, gente: 1.6, su: 25 },
-  { id: 'granite', tipo: 'negozio', nome: 'Chiosco delle granite', em: '🍧', lato: 'R', y: 170, h: 100, q: 0, apri: 0, prezzo: 2, servizio: 3, su: 8, muro: '#f7d774', tetto: '#e8503a' },
+  { id: 'granite', tipo: 'negozio', tavoli: true, nome: 'Chiosco delle granite', em: '🍧', lato: 'R', y: 170, h: 100, q: 0, apri: 0, prezzo: 2, servizio: 3, su: 8, muro: '#f7d774', tetto: '#e8503a' },
   { id: 'edicola', tipo: 'negozio', nome: 'Edicola', em: '📰', lato: 'L', y: 170, h: 100, q: 0, apri: 60, prezzo: 6, servizio: 3.5, su: 40, muro: '#f4b9a6', tetto: '#2f7fbf' },
   { id: 'bus', tipo: 'ingresso', mezzo: 'bus', nome: 'Fermata dell\'autobus', em: '🚌', lato: 'R', y: 18, h: 128, q: 0, apri: 500, ogni: 22, gente: 6, su: 300 },
-  { id: 'bar', tipo: 'negozio', nome: 'Bar del corso', em: '☕', lato: 'L', y: 290, h: 100, q: 0, apri: 1.5e3, prezzo: 25, servizio: 4, su: 600, muro: '#cfe6c4', tetto: '#2e7d4f' },
-  { id: 'gelateria', tipo: 'negozio', nome: 'Gelateria', em: '🍦', lato: 'R', y: 290, h: 100, q: 0, apri: 8e3, prezzo: 70, servizio: 4, su: 3e3, muro: '#f9c6d8', tetto: '#d6487e' },
-  { id: 'pizzeria', tipo: 'negozio', nome: 'Pizzeria', em: '🍕', lato: 'L', y: 440, h: 100, q: 1, apri: 5e4, prezzo: 260, servizio: 5, su: 2e4, muro: '#f1e3c8', tetto: '#c0392b' },
-  { id: 'pasticceria', tipo: 'negozio', nome: 'Pasticceria', em: '🧁', lato: 'R', y: 440, h: 100, q: 1, apri: 2.5e5, prezzo: 900, servizio: 5, su: 1e5, muro: '#d9c9f0', tetto: '#7d55c7' },
+  { id: 'bar', tipo: 'negozio', tavoli: true, nome: 'Bar del corso', em: '☕', lato: 'L', y: 290, h: 100, q: 0, apri: 1.5e3, prezzo: 25, servizio: 4, su: 600, muro: '#cfe6c4', tetto: '#2e7d4f' },
+  { id: 'gelateria', tipo: 'negozio', tavoli: true, nome: 'Gelateria', em: '🍦', lato: 'R', y: 290, h: 100, q: 0, apri: 8e3, prezzo: 70, servizio: 4, su: 3e3, muro: '#f9c6d8', tetto: '#d6487e' },
+  { id: 'pizzeria', tipo: 'negozio', tavoli: true, nome: 'Pizzeria', em: '🍕', lato: 'L', y: 440, h: 100, q: 1, apri: 5e4, prezzo: 260, servizio: 5, su: 2e4, muro: '#f1e3c8', tetto: '#c0392b' },
+  { id: 'pasticceria', tipo: 'negozio', tavoli: true, nome: 'Pasticceria', em: '🧁', lato: 'R', y: 440, h: 100, q: 1, apri: 2.5e5, prezzo: 900, servizio: 5, su: 1e5, muro: '#d9c9f0', tetto: '#7d55c7' },
   { id: 'supermercato', tipo: 'negozio', carrelli: true, nome: 'Supermercato', em: '🛒', lato: 'R', y: 560, h: 110, q: 1, apri: 1.2e6, prezzo: 3e3, servizio: 6, su: 5e5, muro: '#e3eef7', tetto: '#e8503a' },
   { id: 'calcio', tipo: 'attrazione', nome: 'Campo da calcio', em: '⚽', lato: 'L', y: 560, h: 215, q: 1, apri: 6e6, prezzo: 1.2e4, servizio: 8, su: 2.4e6, muro: '#5fa65a', tetto: '#fff' },
-  { id: 'trattoria', tipo: 'negozio', nome: 'Trattoria', em: '🍝', lato: 'R', y: 680, h: 100, q: 1, apri: 3e7, prezzo: 4e4, servizio: 6, su: 1.2e7, muro: '#f6d6a8', tetto: '#2e7d4f' },
+  { id: 'trattoria', tipo: 'negozio', tavoli: true, nome: 'Trattoria', em: '🍝', lato: 'R', y: 680, h: 100, q: 1, apri: 3e7, prezzo: 4e4, servizio: 6, su: 1.2e7, muro: '#f6d6a8', tetto: '#2e7d4f' },
   { id: 'pescheria', tipo: 'negozio', nome: 'Pescheria', em: '🐟', lato: 'L', y: 820, h: 100, q: 2, apri: 2e8, prezzo: 1.5e5, servizio: 6, su: 8e7, muro: '#cde7ee', tetto: '#1f6fa8' },
   { id: 'gokart', tipo: 'attrazione', nome: 'Pista go-kart', em: '🏎️', lato: 'R', y: 820, h: 215, q: 2, apri: 1.2e9, prezzo: 6e5, servizio: 9, su: 5e8, muro: '#7a7a7a', tetto: '#e8503a' },
   { id: 'cantina', tipo: 'negozio', nome: 'Cantina dei vini', em: '🍷', lato: 'L', y: 935, h: 100, q: 2, apri: 7e9, prezzo: 2.2e6, servizio: 7, su: 3e9, muro: '#e8cfc0', tetto: '#7b1e3a' },
   { id: 'boutique', tipo: 'negozio', nome: 'Boutique di sandali', em: '👡', lato: 'L', y: 1050, h: 100, q: 2, apri: 4e10, prezzo: 8e6, servizio: 7, su: 1.6e10, muro: '#fbe3c4', tetto: '#c9822b' },
   { id: 'hotel', tipo: 'negozio', nome: 'Hotel sul mare', em: '🏨', lato: 'R', y: 1050, h: 100, q: 2, apri: 2.5e11, prezzo: 3e7, servizio: 9, su: 1e11, muro: '#bfe3f2', tetto: '#1f6fa8' },
-  { id: 'lido', tipo: 'negozio', nome: 'Lido', em: '⛱️', lato: 'L', y: 1200, h: 100, q: 3, apri: 1.5e12, prezzo: 1.2e8, servizio: 8, su: 6e11, muro: '#fff1b8', tetto: '#e8503a' },
-  { id: 'porto', tipo: 'ingresso', mezzo: 'traghetto', nome: 'Porto', em: '⛴️', lato: 'R', y: 1200, h: 230, q: 3, apri: 6e12, ogni: 45, gente: 30, su: 2e12 },
-  { id: 'yacht', tipo: 'negozio', nome: 'Yacht club', em: '🛥️', lato: 'L', y: 1320, h: 100, q: 3, apri: 4e13, prezzo: 6e8, servizio: 10, su: 1.6e13, muro: '#e3f1fb', tetto: '#1f3d6b' },
+  { id: 'cinema', tipo: 'negozio', nome: 'Cinema', em: '🎬', lato: 'L', y: 1200, h: 100, q: 3, apri: 6e11, prezzo: 5e7, servizio: 8, su: 2.4e11, muro: '#3b2f5c', tetto: '#c0392b' },
+  { id: 'stellato', tipo: 'negozio', tavoli: true, nome: 'Ristorante stellato', em: '⭐', lato: 'R', y: 1430, h: 100, q: 3, apri: 1.2e12, prezzo: 9e7, servizio: 9, su: 5e11, muro: '#f4ead5', tetto: '#1f3d6b' },
+  { id: 'gioielleria', tipo: 'negozio', nome: 'Gioielleria', em: '💍', lato: 'L', y: 1315, h: 100, q: 3, apri: 2e12, prezzo: 1.4e8, servizio: 9, su: 8e11, muro: '#e9e4f5', tetto: '#b8860b' },
+  { id: 'museo', tipo: 'negozio', nome: 'Museo del borgo', em: '🏛️', lato: 'L', y: 1430, h: 100, q: 3, apri: 3e12, prezzo: 2e8, servizio: 10, su: 1.2e12, muro: '#ece3d0', tetto: '#8a7356' },
+  { id: 'ruota', tipo: 'attrazione', nome: 'Ruota panoramica', em: '🎡', lato: 'R', y: 1200, h: 215, q: 3, apri: 4.5e12, prezzo: 3e8, servizio: 10, su: 1.8e12, muro: '#9bc77f', tetto: '#e8503a' },
+  { id: 'lido', tipo: 'negozio', tavoli: true, nome: 'Lido', em: '⛱️', lato: 'L', y: 1580, h: 100, q: 4, apri: 1e13, prezzo: 6e8, servizio: 8, su: 4e12, muro: '#fff1b8', tetto: '#e8503a' },
+  { id: 'porto', tipo: 'ingresso', mezzo: 'traghetto', nome: 'Porto', em: '⛴️', lato: 'R', y: 1580, h: 230, q: 4, apri: 3e13, ogni: 45, gente: 30, su: 1.2e13 },
+  { id: 'yacht', tipo: 'negozio', nome: 'Yacht club', em: '🛥️', lato: 'L', y: 1700, h: 100, q: 4, apri: 1.5e14, prezzo: 3e9, servizio: 10, su: 6e13, muro: '#e3f1fb', tetto: '#1f3d6b' },
 ];
+/** Ordine degli edifici nei salvataggi della versione 4 (prima del Borgo antico). */
+export const ORDINE_V4 = ['parcheggio', 'granite', 'edicola', 'bus', 'bar', 'gelateria', 'pizzeria', 'pasticceria', 'supermercato', 'calcio', 'trattoria', 'pescheria', 'gokart', 'cantina', 'boutique', 'hotel', 'lido', 'porto', 'yacht'];
+
 /** Crescita dei prezzi dei potenziamenti a ogni livello (negozi e attrazioni / ingressi). */
-export const CRESCE = { negozio: 1.12, attrazione: 1.12, ingresso: 1.15 };
+export const CRESCE = { negozio: 1.14, attrazione: 1.14, ingresso: 1.17 };
+/** Ritmo più calmo: aperture e potenziamenti costano di più di quanto scritto negli edifici. */
+export const LENTEZZA = { apri: 3, su: 1.6 };
 /** A questi livelli il prezzo per cliente raddoppia. */
 export const TAPPE = [10, 25, 50, 100, 200, 300, 400, 500, 600, 700, 800];
-/** A questi livelli il negozio apre una cassa in più (massimo 6). */
+/** A questi livelli il negozio apre una cassa in più. */
 export const CASSE = [10, 25, 50, 100, 200];
+/** Commessi in più (una cassa in più ciascuno): costano il prezzo di apertura del negozio × questo, poi ×6 ogni volta. */
+export const COMMESSI = { max: 3, base: 3, cresce: 6 };
 /** Ingressi: a ogni livello arrivano più spesso (fino a 3 volte) e con più gente. */
 export const INGRESSO = { piuSpesso: 0.02, maxSpesso: 3, piuGente: 0.12 };
 /** I clienti se ne vanno se la fila supera questa lunghezza (in gruppi di persone). */
@@ -58,6 +72,38 @@ export const CASSA_PIENA = 90;
 export const LIVELLO_GESTORI = 5;
 /** Ad app chiusa i gestori incassano questa frazione del ritmo normale. */
 export const QUOTA_ASSENZA = 0.5;
+
+/**
+ * Prezzi del negozio: più alti rendono di più per cliente, ma una parte dei clienti se ne va ("troppo caro")
+ * e la reputazione del paese scende; bassi la fanno salire.
+ */
+export const LISTINI = [
+  { nome: 'Bassi', em: '🟢', molt: 0.75, caro: 0, rep: 0.004 },
+  { nome: 'Giusti', em: '🟡', molt: 1, caro: 0.03, rep: 0.002 },
+  { nome: 'Alti', em: '🟠', molt: 1.5, caro: 0.2, rep: -0.001 },
+  { nome: 'Carissimi', em: '🔴', molt: 2.2, caro: 0.4, rep: -0.004 },
+];
+/** Reputazione (0-1): fa arrivare più o meno gente. Si parte da qui. */
+export const REPUTAZIONE = { inizio: 0.7, attesaLunga: 25, fila: -0.012, caro: -0.004, attesa: -0.003, parcheggio: -0.01 };
+/** Moltiplicatore degli arrivi in base alla reputazione. */
+export const arriviDaReputazione = r => 0.6 + 0.8 * r;
+
+/** Parcheggio: posti all'aperto (si allarga a 2 per volta fino a 12), poi i piani del multipiano (12 posti ciascuno). */
+export const PARCHEGGIO = { posti: 6, maxAperto: 12, ampliamento: { base: 40, cresce: 4 }, piano: { base: 1.5e4, cresce: 20, max: 4 } };
+
+/** Eventi a sorpresa: arrivano ogni qualche minuto (durata in secondi). */
+export const EVENTI = [
+  { id: 'festa', em: '🎆', nome: 'Festa del patrono', testo: 'tanta gente in giro: arrivi ×3', durata: 60 },
+  { id: 'pioggia', em: '🌧️', nome: 'Acquazzone', testo: 'meno gente in giro, ma chi c\'è si ferma al coperto', durata: 40 },
+  { id: 'influencer', em: '📸', nome: 'Influencer in visita', testo: 'in un negozio tutti pagano ×4', durata: 60 },
+  { id: 'gita', em: '🚌', nome: 'Gita organizzata', testo: 'arriva un pullman pieno di turisti', durata: 20 },
+  { id: 'oro', em: '💼', nome: 'Turista con la valigia d\'oro', testo: 'toccalo prima che se ne vada!', durata: 45 },
+  { id: 'crociera', em: '🛳️', nome: 'Nave da crociera', testo: 'sbarcano centinaia di turisti', durata: 30, serve: 'porto' },
+];
+export const EVENTO_OGNI = [150, 300];
+
+/** Ciclo del giorno in secondi (giorno, tramonto, notte, alba). */
+export const GIORNATA = 480;
 
 /**
  * Gestori. Due squadre: negozi (anche le attrazioni) e ingressi. Si assumono a caso, il prezzo sale a ogni

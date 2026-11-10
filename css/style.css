@@ -146,3 +146,37 @@ dialog .grande { margin: 6px 0; }
 
 /* tocchi: tutto ciò che si preme risponde */
 button:not(:disabled):active { transform: scale(.96); }
+
+/* ---------------------------------------------------------------- novità: missioni, zoom, eventi, riepilogo */
+#top { cursor: pointer; }
+.avviso.evento { background: #3a2400; color: #ffe066; }
+#mappaWrap { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; touch-action: pan-x pan-y; }
+#mappa { margin: 0 auto; }
+.missione { display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: var(--panel-2); border-bottom: 1px solid var(--line); }
+.missione[hidden] { display: none; }
+.missione.fatta { background: #1f4d2e; }
+.mT { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.mT small { color: var(--muted); font-size: 11px; }
+.mT b { font-size: 13px; line-height: 1.25; }
+.mBar { display: block; height: 5px; border-radius: 3px; background: #0005; overflow: hidden; }
+.mBar i { display: block; height: 100%; background: linear-gradient(90deg, #2fae5e, #8fd3a5); }
+.mP { color: var(--oro); font-size: 11.5px; font-weight: 800; white-space: nowrap; }
+.missione .mini { white-space: nowrap; animation: pronto 1.2s ease-in-out infinite; }
+.mano { position: absolute; z-index: 8; font-size: 28px; transform: translate(-50%, 0); pointer-events: none; animation: indica .7s ease-in-out infinite alternate; filter: drop-shadow(0 2px 3px #0008); }
+.mano[hidden] { display: none; }
+@keyframes indica { to { transform: translate(-50%, -8px); } }
+.comandiMappa { position: fixed; right: 12px; bottom: calc(var(--nav-h) + 12px + env(safe-area-inset-bottom)); z-index: 15; display: grid; gap: 6px; }
+.comandiMappa button { width: 40px; height: 40px; border-radius: 12px; background: #1a1208e6; border: 1px solid var(--line); color: var(--text); font-size: 20px; font-weight: 900; }
+.raccogliTutto { position: fixed; left: 12px; bottom: calc(var(--nav-h) + 12px + env(safe-area-inset-bottom)); z-index: 15; padding: 10px 14px; border-radius: 14px; background: var(--oro); color: var(--oro-ink); font-weight: 900; box-shadow: 0 3px 0 #b8861f, 0 4px 14px #0007; }
+.raccogliTutto[hidden] { display: none; }
+.sezione { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.sezione .mini { margin-top: 6px; }
+.listini button { display: grid; gap: 1px; padding: 6px 2px; font-size: 12px; }
+.listini button small { font-weight: 700; opacity: .8; }
+.scheda .riga { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; font-size: 14px; }
+.scheda h4 { margin: 12px 0 4px; font-size: 13px; color: var(--muted); }
+.repBar { height: 8px; border-radius: 4px; background: #0005; overflow: hidden; margin: 2px 0 4px; }
+.repBar i { display: block; height: 100%; background: linear-gradient(90deg, #ff7a6b, #ffc24b, #6fdc8c); }
+.riep td { font-size: 12.5px; padding: 5px 3px; }
+.riep td:last-child { width: 30%; }
+.barra { display: block; height: 7px; border-radius: 4px; background: var(--oro); min-width: 2px; }
