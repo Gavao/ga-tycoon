@@ -1,49 +1,69 @@
-// I numeri del gioco: botteghe sulle terrazze, funicolare, Ape, gestori, lavori sulla scalinata, potenziamenti e rinnovi.
+// I numeri del paese: edifici (negozi, attrazioni, ingressi), quartieri, gestori, potenziamenti e rinnovi.
 //
-// Ogni bottega produce a ogni giro `base × livello` euro di merce (moltiplicati a ogni tappa), divisi tra i suoi commessi.
-// La funicolare raccoglie le cassette e le porta al deposito in piazza; le Ape portano la merce al mercato e la vendono.
-
-/** Botteghe, dall'alto (piazza) verso il mare. apri = prezzo per aprirla; su = prezzo del primo potenziamento. */
-export const BOTTEGHE = [
-  { id: 'granite', nome: 'Chiosco delle granite', em: '🍧', apri: 0, base: 3, su: 10, gestore: 100, muro: '#f7d774', tenda: '#e8503a', cappello: 'coppola', maglia: '#e8503a' },
-  { id: 'edicola', nome: 'Edicola', em: '📰', apri: 150, base: 30, su: 150, gestore: 1.5e3, muro: '#f4b9a6', tenda: '#2f7fbf', cappello: 'coppola', maglia: '#2f7fbf' },
-  { id: 'bar', nome: 'Bar del corso', em: '☕', apri: 3e3, base: 300, su: 2e3, gestore: 2e4, muro: '#cfe6c4', tenda: '#2e7d4f', cappello: 'nessuno', maglia: '#ffffff' },
-  { id: 'gelateria', nome: 'Gelateria', em: '🍦', apri: 5e4, base: 3e3, su: 3e4, gestore: 3e5, muro: '#f9c6d8', tenda: '#d6487e', cappello: 'cuoco', maglia: '#f9c6d8' },
-  { id: 'pizzeria', nome: 'Pizzeria', em: '🍕', apri: 8e5, base: 3e4, su: 4.5e5, gestore: 5e6, muro: '#f1e3c8', tenda: '#c0392b', cappello: 'cuoco', maglia: '#ffffff' },
-  { id: 'pasticceria', nome: 'Pasticceria', em: '🧁', apri: 1.3e7, base: 3e5, su: 7e6, gestore: 8e7, muro: '#d9c9f0', tenda: '#7d55c7', cappello: 'cuoco', maglia: '#ffffff' },
-  { id: 'trattoria', nome: 'Trattoria', em: '🍝', apri: 2e8, base: 3e6, su: 1.1e8, gestore: 1.2e9, muro: '#f6d6a8', tenda: '#2e7d4f', cappello: 'cuoco', maglia: '#ffffff' },
-  { id: 'pescheria', nome: 'Pescheria', em: '🐟', apri: 3.2e9, base: 3e7, su: 1.7e9, gestore: 2e10, muro: '#cde7ee', tenda: '#1f6fa8', cappello: 'marinaio', maglia: '#1f6fa8' },
-  { id: 'cantina', nome: 'Cantina dei vini', em: '🍷', apri: 5e10, base: 3e8, su: 2.7e10, gestore: 3e11, muro: '#e8cfc0', tenda: '#7b1e3a', cappello: 'coppola', maglia: '#7b1e3a' },
-  { id: 'boutique', nome: 'Boutique di sandali', em: '👡', apri: 8e11, base: 3e9, su: 4.3e11, gestore: 5e12, muro: '#fbe3c4', tenda: '#c9822b', cappello: 'nessuno', maglia: '#c9822b' },
-  { id: 'hotel', nome: 'Hotel sul mare', em: '🏨', apri: 1.3e13, base: 3e10, su: 7e12, gestore: 8e13, muro: '#bfe3f2', tenda: '#1f6fa8', cappello: 'nessuno', maglia: '#1f3d6b' },
-  { id: 'lido', nome: 'Lido', em: '⛱️', apri: 2e14, base: 3e11, su: 1.1e14, gestore: 1.2e15, muro: '#fff1b8', tenda: '#e8503a', cappello: 'marinaio', maglia: '#e8503a' },
-  { id: 'cantiere', nome: 'Cantiere navale', em: '⚓', apri: 3.2e15, base: 3e12, su: 1.7e15, gestore: 2e16, muro: '#d8dde3', tenda: '#34495e', cappello: 'marinaio', maglia: '#34495e' },
-  { id: 'yacht', nome: 'Yacht club', em: '🛥️', apri: 5e16, base: 3e13, su: 2.7e16, gestore: 3e17, muro: '#e3f1fb', tenda: '#1f3d6b', cappello: 'marinaio', maglia: '#ffffff' },
-  { id: 'porto', nome: 'Porto turistico', em: '⛵', apri: 8e17, base: 3e14, su: 4.3e17, gestore: 5e18, muro: '#f2f2ee', tenda: '#1f6fa8', cappello: 'marinaio', maglia: '#1f3d6b' },
-];
-/** Quanto aumenta il prezzo del potenziamento di una bottega a ogni livello. */
-export const CRESCE_BOTTEGA = 1.13;
-/** A questi livelli la bottega fa un salto di produzione (×2). */
-export const TAPPE = [10, 25, 50, 100, 200, 300, 400, 500, 600, 700, 800];
-/** A questi livelli la bottega assume un commesso in più (massimo 6 commessi). */
-export const COMMESSI = [10, 50, 100, 200, 400];
-/** I gestori si possono assumere quando il chiosco delle granite arriva a questo livello. */
-export const LIVELLO_GESTORI = 5;
-/** Secondi di un giro del commesso: lavora al bancone, porta la merce alla cassetta, rientra. */
-export const GIRO = { lavora: 2.2, porta: 1.4, rientra: 1.4 };
-/** Lavori sulla scalinata: prima della bottega con questo indice bisogna aspettare (secondi). */
-export const LAVORI = { 5: 15 * 60, 10: 2 * 3600 };
-
-/** Funicolare: capienza e velocità crescono con il livello. */
-export const FUNICOLARE = { cap: 25, capCresce: 1.2, su: 60, cresce: 1.18, gestore: 150, perTerrazza: 0.6, carico: 0.4, velocitaPerLivello: 0.01, velocitaMax: 2 };
-/** Ape: capienza per livello; il numero di Ape cresce ai livelli `nuoveApe` (massimo 5). */
-export const APE = { cap: 30, capCresce: 1.2, su: 50, cresce: 1.18, gestore: 120, viaggio: 3, carico: 0.6, nuoveApe: [10, 50, 100, 200] };
+// I clienti arrivano dagli ingressi (parcheggio, fermata dell'autobus, porto), vanno a piedi in un negozio o in
+// un'attrazione, fanno la fila e pagano alla cassa. I soldi restano nella cassa finché non li raccogli (o lo fa il gestore).
 
 /**
- * Gestori. Ogni zona (botteghe, funicolare, Ape) ha la sua squadra: si assumono a caso, il prezzo sale a ogni
- * assunzione, si assegnano ai posti e si possono scambiare o vendere (metà del prezzo). Il gestore assegnato fa
- * lavorare il posto da solo, sempre. L'abilità speciale invece si attiva a mano: dura un po' e poi si ricarica,
- * e la ricarica è del gestore, non del posto (conviene mettere al posto un gestore con l'abilità pronta).
+ * Mappa in coordinate "logiche": larghezza 360, scalata sullo schermo. Il corso è la strada verticale al centro
+ * (x 160-200); i lotti sono a sinistra (x 12-146) e a destra (x 214-348). y è l'alto del lotto, h l'altezza.
+ */
+export const LARGHEZZA = 360;
+export const CORSO = { x1: 160, x2: 200, marcL: 154, marcR: 206 };
+export const QUARTIERI = [
+  { nome: 'Piazza', y: 0, fine: 410, lavori: 0 },
+  { nome: 'Centro', y: 410, fine: 790, lavori: 10 * 60 },
+  { nome: 'Lungomare', y: 790, fine: 1170, lavori: 60 * 60 },
+  { nome: 'Porto', y: 1170, fine: 1470, lavori: 3 * 3600 },
+];
+
+/**
+ * Edifici in ordine di apertura. tipo: negozio | attrazione | ingresso. lato: L/R; y,h: lotto.
+ * Negozi e attrazioni: prezzo = euro per cliente al livello 1, servizio = secondi per cliente, su = primo potenziamento.
+ * Ingressi: ogni = secondi tra un arrivo e l'altro, gente = persone per arrivo (crescono con il livello).
+ */
+export const EDIFICI = [
+  { id: 'parcheggio', tipo: 'ingresso', mezzo: 'auto', nome: 'Parcheggio', em: '🅿️', lato: 'L', y: 18, h: 128, q: 0, apri: 0, ogni: 7, gente: 1.6, su: 25 },
+  { id: 'granite', tipo: 'negozio', nome: 'Chiosco delle granite', em: '🍧', lato: 'R', y: 170, h: 100, q: 0, apri: 0, prezzo: 2, servizio: 3, su: 8, muro: '#f7d774', tetto: '#e8503a' },
+  { id: 'edicola', tipo: 'negozio', nome: 'Edicola', em: '📰', lato: 'L', y: 170, h: 100, q: 0, apri: 60, prezzo: 6, servizio: 3.5, su: 40, muro: '#f4b9a6', tetto: '#2f7fbf' },
+  { id: 'bus', tipo: 'ingresso', mezzo: 'bus', nome: 'Fermata dell\'autobus', em: '🚌', lato: 'R', y: 18, h: 128, q: 0, apri: 500, ogni: 22, gente: 6, su: 300 },
+  { id: 'bar', tipo: 'negozio', nome: 'Bar del corso', em: '☕', lato: 'L', y: 290, h: 100, q: 0, apri: 1.5e3, prezzo: 25, servizio: 4, su: 600, muro: '#cfe6c4', tetto: '#2e7d4f' },
+  { id: 'gelateria', tipo: 'negozio', nome: 'Gelateria', em: '🍦', lato: 'R', y: 290, h: 100, q: 0, apri: 8e3, prezzo: 70, servizio: 4, su: 3e3, muro: '#f9c6d8', tetto: '#d6487e' },
+  { id: 'pizzeria', tipo: 'negozio', nome: 'Pizzeria', em: '🍕', lato: 'L', y: 440, h: 100, q: 1, apri: 5e4, prezzo: 260, servizio: 5, su: 2e4, muro: '#f1e3c8', tetto: '#c0392b' },
+  { id: 'pasticceria', tipo: 'negozio', nome: 'Pasticceria', em: '🧁', lato: 'R', y: 440, h: 100, q: 1, apri: 2.5e5, prezzo: 900, servizio: 5, su: 1e5, muro: '#d9c9f0', tetto: '#7d55c7' },
+  { id: 'supermercato', tipo: 'negozio', carrelli: true, nome: 'Supermercato', em: '🛒', lato: 'R', y: 560, h: 110, q: 1, apri: 1.2e6, prezzo: 3e3, servizio: 6, su: 5e5, muro: '#e3eef7', tetto: '#e8503a' },
+  { id: 'calcio', tipo: 'attrazione', nome: 'Campo da calcio', em: '⚽', lato: 'L', y: 560, h: 215, q: 1, apri: 6e6, prezzo: 1.2e4, servizio: 8, su: 2.4e6, muro: '#5fa65a', tetto: '#fff' },
+  { id: 'trattoria', tipo: 'negozio', nome: 'Trattoria', em: '🍝', lato: 'R', y: 680, h: 100, q: 1, apri: 3e7, prezzo: 4e4, servizio: 6, su: 1.2e7, muro: '#f6d6a8', tetto: '#2e7d4f' },
+  { id: 'pescheria', tipo: 'negozio', nome: 'Pescheria', em: '🐟', lato: 'L', y: 820, h: 100, q: 2, apri: 2e8, prezzo: 1.5e5, servizio: 6, su: 8e7, muro: '#cde7ee', tetto: '#1f6fa8' },
+  { id: 'gokart', tipo: 'attrazione', nome: 'Pista go-kart', em: '🏎️', lato: 'R', y: 820, h: 215, q: 2, apri: 1.2e9, prezzo: 6e5, servizio: 9, su: 5e8, muro: '#7a7a7a', tetto: '#e8503a' },
+  { id: 'cantina', tipo: 'negozio', nome: 'Cantina dei vini', em: '🍷', lato: 'L', y: 935, h: 100, q: 2, apri: 7e9, prezzo: 2.2e6, servizio: 7, su: 3e9, muro: '#e8cfc0', tetto: '#7b1e3a' },
+  { id: 'boutique', tipo: 'negozio', nome: 'Boutique di sandali', em: '👡', lato: 'L', y: 1050, h: 100, q: 2, apri: 4e10, prezzo: 8e6, servizio: 7, su: 1.6e10, muro: '#fbe3c4', tetto: '#c9822b' },
+  { id: 'hotel', tipo: 'negozio', nome: 'Hotel sul mare', em: '🏨', lato: 'R', y: 1050, h: 100, q: 2, apri: 2.5e11, prezzo: 3e7, servizio: 9, su: 1e11, muro: '#bfe3f2', tetto: '#1f6fa8' },
+  { id: 'lido', tipo: 'negozio', nome: 'Lido', em: '⛱️', lato: 'L', y: 1200, h: 100, q: 3, apri: 1.5e12, prezzo: 1.2e8, servizio: 8, su: 6e11, muro: '#fff1b8', tetto: '#e8503a' },
+  { id: 'porto', tipo: 'ingresso', mezzo: 'traghetto', nome: 'Porto', em: '⛴️', lato: 'R', y: 1200, h: 230, q: 3, apri: 6e12, ogni: 45, gente: 30, su: 2e12 },
+  { id: 'yacht', tipo: 'negozio', nome: 'Yacht club', em: '🛥️', lato: 'L', y: 1320, h: 100, q: 3, apri: 4e13, prezzo: 6e8, servizio: 10, su: 1.6e13, muro: '#e3f1fb', tetto: '#1f3d6b' },
+];
+/** Crescita dei prezzi dei potenziamenti a ogni livello (negozi e attrazioni / ingressi). */
+export const CRESCE = { negozio: 1.12, attrazione: 1.12, ingresso: 1.15 };
+/** A questi livelli il prezzo per cliente raddoppia. */
+export const TAPPE = [10, 25, 50, 100, 200, 300, 400, 500, 600, 700, 800];
+/** A questi livelli il negozio apre una cassa in più (massimo 6). */
+export const CASSE = [10, 25, 50, 100, 200];
+/** Ingressi: a ogni livello arrivano più spesso (fino a 3 volte) e con più gente. */
+export const INGRESSO = { piuSpesso: 0.02, maxSpesso: 3, piuGente: 0.12 };
+/** I clienti se ne vanno se la fila supera questa lunghezza (in gruppi di persone). */
+export const FILA_MAX = 7;
+/** La cassa di un negozio si riempie in questi secondi di vendite: poi il negozio non incassa più finché non la svuoti. */
+export const CASSA_PIENA = 90;
+/** I gestori si possono assumere quando il chiosco delle granite arriva a questo livello. */
+export const LIVELLO_GESTORI = 5;
+/** Ad app chiusa i gestori incassano questa frazione del ritmo normale. */
+export const QUOTA_ASSENZA = 0.5;
+
+/**
+ * Gestori. Due squadre: negozi (anche le attrazioni) e ingressi. Si assumono a caso, il prezzo sale a ogni
+ * assunzione, si assegnano agli edifici e si possono scambiare o vendere (metà del prezzo). Il gestore resta fisso:
+ * nei negozi raccoglie da solo la cassa, negli ingressi fa arrivare gente anche ad app chiusa. L'abilità speciale
+ * si attiva a mano, dura un po' e poi si ricarica (la ricarica è del gestore, non dell'edificio).
  */
 export const GRADI = [
   { nome: 'Junior', prob: 0.65, durata: 60, ricarica: 300, colore: '#8fd3a5' },
@@ -51,54 +71,43 @@ export const GRADI = [
   { nome: 'Executive', prob: 0.08, durata: 600, ricarica: 3000, colore: '#ffc24b' },
 ];
 const SCONTO = { id: 'sconto', nome: 'Sconto', em: '💸', effetto: [0.4, 0.7, 0.8], testo: x => `potenziamenti scontati del ${Math.round(x * 100)}%` };
-/** Abilità per zona, con l'effetto per grado (Junior, Senior, Executive). */
 export const ABILITA = {
-  b: [
-    { id: 'lavoro', nome: 'Mani d\'oro', em: '⚒️', effetto: [3, 5, 7], testo: x => `i commessi lavorano ×${x} più veloci` },
-    { id: 'passo', nome: 'Passo svelto', em: '👟', effetto: [3.5, 5.5, 7.5], testo: x => `i commessi camminano ×${x} più veloci` },
+  n: [
+    { id: 'veloce', nome: 'Cassa veloce', em: '⚡', effetto: [3, 5, 7], testo: x => `serve i clienti ×${x} più in fretta` },
+    { id: 'prezzo', nome: 'Prezzi d\'oro', em: '💶', effetto: [2, 3, 5], testo: x => `ogni cliente paga ×${x}` },
     SCONTO,
   ],
-  f: [
-    { id: 'veloce', nome: 'Corsa veloce', em: '⚡', effetto: [2, 4, 6], testo: x => `la cabina va ×${x} più veloce` },
-    { id: 'caricamento', nome: 'Carico rapido', em: '⏩', effetto: [2, 4, 6], testo: x => `carica ×${x} più in fretta` },
-    { id: 'capienza', nome: 'Cabina capiente', em: '📦', effetto: [3, 5, 7], testo: x => `porta ×${x} merce` },
-    SCONTO,
-  ],
-  a: [
-    { id: 'veloce', nome: 'Piede sull\'acceleratore', em: '⚡', effetto: [3, 5, 7], testo: x => `le Ape vanno ×${x} più veloci` },
-    { id: 'caricamento', nome: 'Carico rapido', em: '⏩', effetto: [3, 5, 8], testo: x => `caricano ×${x} più in fretta` },
-    { id: 'capienza', nome: 'Cassone grande', em: '📦', effetto: [3, 5, 8], testo: x => `portano ×${x} merce` },
+  i: [
+    { id: 'arrivi', nome: 'Pienone', em: '🚗', effetto: [2, 3, 4], testo: x => `arriva gente ×${x} più spesso` },
+    { id: 'gente', nome: 'Gita organizzata', em: '👨‍👩‍👧', effetto: [2, 3, 5], testo: x => `ogni arrivo porta ×${x} persone` },
     SCONTO,
   ],
 };
-/** Prezzo della prima assunzione per zona e di quanto si moltiplica a ogni gestore in più nella squadra. */
-export const PREZZO_GESTORI = { b: { base: 100, cresce: 4 }, f: { base: 150, cresce: 6 }, a: { base: 120, cresce: 6 } };
+export const PREZZO_GESTORI = { n: { base: 100, cresce: 3.5 }, i: { base: 150, cresce: 6 } };
 export const NOMI_GESTORI = ['Peppe', 'Carmela', 'Totò', 'Nunzia', 'Gennaro', 'Assunta', 'Ciro', 'Filomena', 'Salvatore', 'Rosaria', 'Tonino', 'Concetta', 'Enzo', 'Lucia', 'Pasquale', 'Titina', 'Vincenzo', 'Teresa', 'Gigi', 'Annarella', 'Mimmo', 'Pina', 'Rocco', 'Graziella'];
-/** Ad app chiusa i gestori incassano questa frazione del ritmo normale. */
-export const QUOTA_ASSENZA = 0.5;
 
-/** Potenziamenti che durano fino al prossimo rinnovo. tipo: produzione di tutte le botteghe, velocità di funicolare o Ape. */
+/** Potenziamenti fino al prossimo rinnovo. tipo: prezzo (tutti i negozi), arrivi (tutti gli ingressi), veloce (servizio). */
 export const POTENZIAMENTI = [
-  { id: 'funi-1', nome: 'Funicolare elettrica', em: '🚡', tipo: 'funi', molt: 1.5, costo: 5e3 },
-  { id: 'ape-1', nome: 'Ape con il turbo', em: '🛺', tipo: 'ape', molt: 1.5, costo: 5e3 },
-  { id: 'tutti-1', nome: 'Luminarie sul corso', em: '✨', tipo: 'prod', molt: 2, costo: 2e5 },
-  { id: 'funi-2', nome: 'Binari nuovi', em: '🚡', tipo: 'funi', molt: 1.5, costo: 3e6 },
-  { id: 'ape-2', nome: 'Ape Calessino', em: '🛺', tipo: 'ape', molt: 1.5, costo: 3e6 },
-  { id: 'tutti-2', nome: 'Festa del patrono', em: '🎆', tipo: 'prod', molt: 2, costo: 5e7 },
-  { id: 'tutti-3', nome: 'Turisti in crociera', em: '🛳️', tipo: 'prod', molt: 3, costo: 2e10 },
-  { id: 'funi-3', nome: 'Doppia cabina', em: '🚡', tipo: 'funi', molt: 2, costo: 5e10 },
-  { id: 'ape-3', nome: 'Strade nuove', em: '🛺', tipo: 'ape', molt: 2, costo: 5e10 },
-  { id: 'tutti-4', nome: 'Corso pedonale', em: '🚶', tipo: 'prod', molt: 3, costo: 8e12 },
-  { id: 'tutti-5', nome: 'Bandiera blu', em: '🏖️', tipo: 'prod', molt: 3, costo: 3e15 },
-  { id: 'tutti-6', nome: 'Patrimonio UNESCO', em: '🏛️', tipo: 'prod', molt: 3, costo: 1e18 },
+  { id: 'p1', nome: 'Insegne luminose', em: '✨', tipo: 'prezzo', molt: 2, costo: 5e3 },
+  { id: 'a1', nome: 'Cartelli stradali', em: '🪧', tipo: 'arrivi', molt: 1.5, costo: 2e4 },
+  { id: 'v1', nome: 'Registratori di cassa', em: '🧾', tipo: 'veloce', molt: 1.5, costo: 1e5 },
+  { id: 'p2', nome: 'Festa del patrono', em: '🎆', tipo: 'prezzo', molt: 2, costo: 2e6 },
+  { id: 'a2', nome: 'Pubblicità alla radio', em: '📻', tipo: 'arrivi', molt: 1.5, costo: 1e7 },
+  { id: 'v2', nome: 'Pagamento col telefono', em: '📱', tipo: 'veloce', molt: 1.5, costo: 5e8 },
+  { id: 'p3', nome: 'Turisti in crociera', em: '🛳️', tipo: 'prezzo', molt: 3, costo: 2e10 },
+  { id: 'a3', nome: 'Strada nuova', em: '🛣️', tipo: 'arrivi', molt: 2, costo: 1e11 },
+  { id: 'p4', nome: 'Corso pedonale', em: '🚶', tipo: 'prezzo', molt: 3, costo: 5e12 },
+  { id: 'v3', nome: 'Casse automatiche', em: '🤖', tipo: 'veloce', molt: 2, costo: 2e13 },
+  { id: 'p5', nome: 'Bandiera blu', em: '🏖️', tipo: 'prezzo', molt: 3, costo: 3e15 },
+  { id: 'a4', nome: 'Aeroporto vicino', em: '✈️', tipo: 'arrivi', molt: 2, costo: 1e17 },
 ];
 
-/** Rinnovi del corso: si paga, si riparte da zero e la produzione resta moltiplicata per sempre. */
+/** Rinnovi del paese: si paga, si riparte da zero e gli incassi restano moltiplicati per sempre. */
 export const RINNOVI = [
   { nome: 'Facciate ridipinte', costo: 1e12, molt: 3 },
   { nome: 'Pavimento in pietra', costo: 1e15, molt: 10 },
   { nome: 'Lampioni d\'epoca', costo: 1e18, molt: 25 },
   { nome: 'Giardini pensili', costo: 1e21, molt: 50 },
   { nome: 'Teatro all\'aperto', costo: 1e24, molt: 100 },
-  { nome: 'Il corso più bello d\'Italia', costo: 1e27, molt: 200 },
+  { nome: 'Il paese più bello d\'Italia', costo: 1e27, molt: 200 },
 ];
